@@ -12,10 +12,11 @@ let package = Package(
         .library(
             name: "Networking",
             targets: ["Networking"]
-        ),
+        )
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-http-types.git", exact: "1.4.0")
+        .package(url: "https://github.com/apple/swift-http-types.git", exact: "1.4.0"),
+        .package(url: "https://github.com/apple/swift-algorithms", exact: "1.2.1")
     ],
     targets: [
         .target(
@@ -26,7 +27,10 @@ let package = Package(
         ),
         .testTarget(
             name: "NetworkingTests",
-            dependencies: ["Networking"]
-        ),
+            dependencies: [
+                "Networking",
+                .product(name: "Algorithms", package: "swift-algorithms"),
+            ]
+        )
     ]
 )
