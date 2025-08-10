@@ -1,5 +1,5 @@
 //
-//  HTTPEndpointProtocolTests.swift
+//  HTTPEndpointTests.swift
 //  Networking
 //
 //  Created by 陸瑋恩 on 2025/6/22.
@@ -7,41 +7,32 @@
 
 import Testing
 import Foundation
-import Algorithms
 
 @testable import Networking
 
 @Suite
-struct HTTPEndpointProtocolTests {
+struct HTTPEndpointTests {
     
     @Suite
     struct MakeRequestTests {
         
         @Test(arguments: MockAPIEnvironment.allCases)
-        func successWithPlain(environment: MockAPIEnvironment) throws {
+        func success(environment: MockAPIEnvironment) throws {
             try success(endpoint: .plain, environment: environment)
         }
         
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func successWithPlainHeader(environment: MockAPIEnvironment) throws {
-            try success(endpoint: .plainWithHeaderValue(accessToken: "mock_access_token"), environment: environment)
-        }
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func successWithURLQueries(environment: MockAPIEnvironment) throws {
-            try success(endpoint: .url(queries: ["product_id": "12345"]), environment: environment)
-        }
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func successWithBodyData(environment: MockAPIEnvironment) throws {
-            let data = "mock_data".data(using: .utf8)!
-            try success(endpoint: .body(data: data), environment: environment)
-        }
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func successWithBodyEncodable(environment: MockAPIEnvironment) throws {
-            let encodable = ["product_id": "12345"]
-            try success(endpoint: .body(encodable: encodable), environment: environment)
+        @Test
+        func success() throws {
+            let array: [MockAPIEndpoint] = [
+                .plain,
+                .plainWithHeaderValue(accessToken: "mock_access_token"),
+                .url(queries: ["product_id": "12345"]),
+                .body(data: "mock_data".data(using: .utf8)!),
+                .body(encodable: ["product_id": "12345"])
+            ]
+            try array.forEach {
+                try success(endpoint: $0, environment: .production)
+            }
         }
         
         private func success(endpoint: MockAPIEndpoint, environment: MockAPIEnvironment) throws {
@@ -137,7 +128,7 @@ struct HTTPEndpointProtocolTests {
 }
 
 // MARK: - Mock Encodables
-extension HTTPEndpointProtocolTests {
+extension HTTPEndpointTests {
     
     struct InvalidEncodable: Encodable {
         let float: Float = .infinity
