@@ -8,20 +8,14 @@
 import Foundation
 import HTTPTypes
 
-open class HTTPEndpoint<Environment> {
-    let domain: (Environment) -> String
+open class HTTPEndpoint {
+    let domain: () -> String
     let path: String
     let method: HTTPMethod
     let headers: [HTTPHeader]
     let parameter: HTTPParameter?
     
-    public init(
-        domain: @escaping (Environment) -> String,
-        path: String,
-        method: HTTPMethod,
-        headers: [HTTPHeader],
-        parameter: HTTPParameter?
-    ) {
+    public init(domain: @escaping () -> String, path: String, method: HTTPMethod, headers: [HTTPHeader], parameter: HTTPParameter?) {
         self.domain = domain
         self.path = path
         self.method = method
@@ -29,8 +23,8 @@ open class HTTPEndpoint<Environment> {
         self.parameter = parameter
     }
     
-    open func makeRequest(for environment: Environment) -> Result<URLRequest, MakeRequestError> {
-        let urlString = domain(environment) + path
+    open func makeRequest() -> Result<URLRequest, MakeRequestError> {
+        let urlString = domain() + path
         guard let url = URL(string: urlString) else { return .failure(.invalidURL(urlString)) }
         
         var request = URLRequest(url: url)
@@ -65,12 +59,5 @@ extension HTTPEndpoint {
     public enum MakeRequestError: Error {
         case invalidURL(String)
         case jsonEncodingFailure(Error)
-    }
-}
-
-// MARK: - Void Environment
-extension HTTPEndpoint where Environment == Void {
-    public func makeRequest() -> Result<URLRequest, MakeRequestError> {
-        return makeRequest(for: ())
     }
 }

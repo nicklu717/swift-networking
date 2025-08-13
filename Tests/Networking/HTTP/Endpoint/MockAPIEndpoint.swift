@@ -9,7 +9,25 @@ import Foundation
 
 @testable import Networking
 
-class MockAPIEndpoint: HTTPEndpoint<MockAPIEnvironment> {
+class MockAppSettings {
+    static let shared = MockAppSettings()
+    
+    enum MockAPIEnvironment: CaseIterable {
+        case staging, production
+        
+        var mockAPIDomain: String {
+            switch self {
+            case .staging:
+                return "https://staging.example.com"
+            case .production:
+                return "https://api.example.com"
+            }
+        }
+    }
+    let currentMockAPIEnvironment: MockAPIEnvironment = .staging
+}
+
+class MockAPIEndpoint: HTTPEndpoint {
     
     required init(
         path: String,
@@ -18,14 +36,7 @@ class MockAPIEndpoint: HTTPEndpoint<MockAPIEnvironment> {
         parameter: HTTPParameter?
     ) {
         super.init(
-            domain: {
-                switch $0 {
-                case .staging:
-                    return "https://staging.example.com"
-                case .production:
-                    return "https://api.example.com"
-                }
-            },
+            domain: { MockAppSettings.shared.currentMockAPIEnvironment.mockAPIDomain },
             path: path,
             method: method,
             headers: headers,

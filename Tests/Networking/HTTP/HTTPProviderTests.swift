@@ -15,63 +15,17 @@ import Combine
 struct HTTPProviderTests {
     
     @Suite
-    struct SendRequestTests {
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func success(environment: MockAPIEnvironment) async {
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .success(Data())), environment: environment)
-            var isSuccess = false
-            var failureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            
-            switch await provider.sendRequest(for: .plain) {
-            case .success:
-                isSuccess = true
-            case .failure(let error):
-                failureError = error
-            }
-            
-            #expect(isSuccess)
-            #expect(failureError == nil)
-        }
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func urlSessionClientError(environment: MockAPIEnvironment) async throws {
-            let requestFailureError: URLSessionClient.FetchError = .requestFailure(statusCode: 401, Data())
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .failure(requestFailureError)), environment: environment)
-            var isSuccess = false
-            var urlSessionClientError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            var otherFailureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            
-            switch await provider.sendRequest(for: .plain) {
-            case .success:
-                isSuccess = true
-            case .failure(let error):
-                switch error {
-                case .urlSessionClientError:
-                    urlSessionClientError = error
-                default:
-                    otherFailureError = error
-                }
-            }
-            
-            #expect(!isSuccess)
-            #expect(urlSessionClientError != nil)
-            #expect(otherFailureError == nil)
-        }
-    }
-    
-    @Suite
     struct FetchObjectTests {
         
         let mockID = 1
         let mockName = "Test"
         
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func success(environment: MockAPIEnvironment) async throws {
+        @Test
+        func success() async throws {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .success(data)), environment: environment)
+            let provider = HTTPProvider<MockAPIEndpoint>(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
-            var failureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
+            var failureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
             switch await provider.fetchObject(for: .plain, type: MockObject.self) {
             case .success(let object):
@@ -84,13 +38,13 @@ struct HTTPProviderTests {
             #expect(failureError == nil)
         }
         
-        @Test(arguments: MockAPIEnvironment.allCases)
-        func jsonDecodingFailure(environment: MockAPIEnvironment) async throws {
+        @Test
+        func jsonDecodingFailure() async throws {
             let data = "{}".data(using: .utf8)!
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .success(data)), environment: environment)
+            let provider = HTTPProvider<MockAPIEndpoint>(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
-            var jsonDecodingFailureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            var otherFailureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
+            var jsonDecodingFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
+            var otherFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
             switch await provider.fetchObject(for: .plain, type: MockObject.self) {
             case .success(let object):
@@ -111,82 +65,6 @@ struct HTTPProviderTests {
     }
     
     @Suite
-    struct SendRequestPublisherTests {
-        
-        var cancellables = Set<AnyCancellable>()
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        mutating func success(environment: MockAPIEnvironment) async {
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .success(Data())), environment: environment)
-            var isSuccess = false
-            var isFinished = false
-            var failureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            
-            await withCheckedContinuation { continuation in
-                provider.sendRequestPublisher(for: .plain)
-                    .sink(
-                        receiveCompletion: {
-                            switch $0 {
-                            case .finished:
-                                isFinished = true
-                            case .failure(let error):
-                                failureError = error
-                            }
-                            continuation.resume()
-                        },
-                        receiveValue: {
-                            isSuccess = true
-                        }
-                    )
-                    .store(in: &cancellables)
-            }
-            
-            #expect(isSuccess)
-            #expect(isFinished)
-            #expect(failureError == nil)
-        }
-        
-        @Test(arguments: MockAPIEnvironment.allCases)
-        mutating func urlSessionClientError(environment: MockAPIEnvironment) async throws {
-            let requestFailureError: URLSessionClient.FetchError = .requestFailure(statusCode: 401, Data())
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .failure(requestFailureError)), environment: environment)
-            var isSuccess = false
-            var isFinished = false
-            var urlSessionClientError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            var otherFailureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            
-            await withCheckedContinuation { continuation in
-                provider.sendRequestPublisher(for: .plain)
-                    .sink(
-                        receiveCompletion: {
-                            switch $0 {
-                            case .finished:
-                                isFinished = true
-                            case .failure(let error):
-                                switch error {
-                                case .urlSessionClientError:
-                                    urlSessionClientError = error
-                                default:
-                                    otherFailureError = error
-                                }
-                            }
-                            continuation.resume()
-                        },
-                        receiveValue: {
-                            isSuccess = true
-                        }
-                    )
-                    .store(in: &cancellables)
-            }
-            
-            #expect(!isSuccess)
-            #expect(!isFinished)
-            #expect(urlSessionClientError != nil)
-            #expect(otherFailureError == nil)
-        }
-    }
-    
-    @Suite
     struct FetchObjectPublisherTests {
         
         var cancellables = Set<AnyCancellable>()
@@ -194,13 +72,13 @@ struct HTTPProviderTests {
         let mockID = 1
         let mockName = "Test"
         
-        @Test(arguments: MockAPIEnvironment.allCases)
-        mutating func success(environment: MockAPIEnvironment) async {
+        @Test
+        mutating func success() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>(client: MockURLSessionClient(mockResult: .success(data)), environment: environment)
+            let provider = HTTPProvider<MockAPIEndpoint>(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
             var isFinished = false
-            var failureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
+            var failureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
             await withCheckedContinuation { continuation in
                 provider.fetchObjectPublisher(for: .plain, type: MockObject.self)
@@ -226,14 +104,14 @@ struct HTTPProviderTests {
             #expect(failureError == nil)
         }
         
-        @Test(arguments: MockAPIEnvironment.allCases)
-        mutating func selfBeingReleased(environment: MockAPIEnvironment) async {
+        @Test
+        mutating func selfBeingReleased() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            var provider: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>? = HTTPProvider(client: MockURLSessionClient(mockResult: .success(data)), environment: environment)
+            var provider: HTTPProvider<MockAPIEndpoint>? = HTTPProvider(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
             var isFinished = false
-            var selfBeingReleasedError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
-            var otherFailureError: HTTPProvider<MockAPIEndpoint, MockAPIEnvironment>.FetchError?
+            var selfBeingReleasedError: HTTPProvider<MockAPIEndpoint>.FetchError?
+            var otherFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
             await withCheckedContinuation { continuation in
                 let publisher = provider!.fetchObjectPublisher(for: .plain, type: MockObject.self)

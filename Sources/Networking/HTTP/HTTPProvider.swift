@@ -8,20 +8,14 @@
 import Foundation
 import Combine
 
-open class HTTPProvider<Endpoint, Environment> where Endpoint: HTTPEndpoint<Environment> {
+open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
     private let client: URLSessionClientProtocol
-    private let environment: Environment
     
-    public init(client: URLSessionClientProtocol, environment: Environment) {
+    public init(client: URLSessionClientProtocol) {
         self.client = client
-        self.environment = environment
     }
     
     // MARK: - Async
-    open func sendRequest(for endpoint: Endpoint) async -> Result<Void, FetchError> {
-        return await fetchData(for: endpoint).map { _ in () }
-    }
-    
     open func fetchObject<T>(for endpoint: Endpoint, type: T.Type) async -> Result<T, FetchError> where T: Decodable {
         return await fetchData(for: endpoint).flatMap { decode(data: $0) }
     }
@@ -32,12 +26,6 @@ open class HTTPProvider<Endpoint, Environment> where Endpoint: HTTPEndpoint<Envi
     }
     
     // MARK: - Combine
-    open func sendRequestPublisher(for endpoint: Endpoint) -> AnyPublisher<Void, FetchError> {
-        return fetchDataPublisher(for: endpoint)
-            .map { _ in () }
-            .eraseToAnyPublisher()
-    }
-    
     open func fetchObjectPublisher<T>(for endpoint: Endpoint, type: T.Type) -> AnyPublisher<T, FetchError> where T: Decodable {
         return fetchDataPublisher(for: endpoint)
             .flatMap { [weak self] data -> AnyPublisher<T, FetchError> in
@@ -61,7 +49,7 @@ open class HTTPProvider<Endpoint, Environment> where Endpoint: HTTPEndpoint<Envi
 
 extension HTTPProvider {
     private func makeRequest(for endpoint: Endpoint) -> Result<URLRequest, FetchError> {
-        return endpoint.makeRequest(for: environment).mapError { .makeRequestError($0) }
+        return endpoint.makeRequest().mapError { .makeRequestError($0) }
     }
     
     private func decode<T>(data: Data) -> Result<T, FetchError> where T: Decodable {
@@ -77,7 +65,7 @@ extension HTTPProvider {
 extension HTTPProvider {
     public enum FetchError: Error {
         case urlSessionClientError(URLSessionClient.FetchError)
-        case makeRequestError(HTTPEndpoint<Environment>.MakeRequestError)
+        case makeRequestError(HTTPEndpoint.MakeRequestError)
         case jsonDecodingFailure(Error)
         case selfBeingReleased
     }
