@@ -58,7 +58,7 @@ class MockAPIEndpoint: HTTPEndpoint {
             path: "/plainWithHeaderValue",
             method: .get,
             headers: [
-                .authorization(.bearer(accessToken)),
+                .authorization(.bearer(token: accessToken)),
             ],
             parameter: nil
         )

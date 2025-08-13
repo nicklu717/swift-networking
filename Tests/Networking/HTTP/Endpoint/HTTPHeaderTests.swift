@@ -15,7 +15,7 @@ struct HTTPHeaderTests {
     @Test
     func authorization() {
         let mockToken = "mockToken"
-        let header: HTTPHeader = .authorization(.bearer(mockToken))
+        let header: HTTPHeader = .authorization(.bearer(token: mockToken))
         #expect(header.entry == (.authorization, "Bearer \(mockToken)"))
     }
     
