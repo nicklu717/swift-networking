@@ -19,7 +19,7 @@ struct HTTPEndpointTests {
         @Test
         func success() throws {
             let endpoints: [MockAPIEndpoint] = [
-                .plain,
+                .plain(),
                 .plainWithHeaderValue(accessToken: "mock_access_token"),
                 .url(queries: ["product_id": "12345"]),
                 .body(data: "mock_data".data(using: .utf8)!),
@@ -70,7 +70,7 @@ struct HTTPEndpointTests {
         
         @Test
         func invalidURL() {
-            let endpoint: MockAPIEndpoint = .invalidURL
+            let endpoint: MockAPIEndpoint = .invalidURL()
             var successRequest: URLRequest?
             var invalidURLError: MockAPIEndpoint.MakeRequestError?
             var otherFailureError: MockAPIEndpoint.MakeRequestError?

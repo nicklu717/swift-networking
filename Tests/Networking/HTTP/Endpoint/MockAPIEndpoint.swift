@@ -29,7 +29,7 @@ class MockAppSettings {
 
 class MockAPIEndpoint: HTTPEndpoint {
     
-    required init(
+    init(
         path: String,
         method: HTTPMethod,
         headers: [HTTPHeader],
@@ -44,19 +44,19 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static var plain: Self {
-        Self(
+    static func plain() -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: "/plain",
-            method: .GET,
+            method: .get,
             headers: [],
             parameter: nil
         )
     }
     
-    static func plainWithHeaderValue(accessToken: String) -> Self {
-        Self(
+    static func plainWithHeaderValue(accessToken: String) -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: "/plainWithHeaderValue",
-            method: .GET,
+            method: .get,
             headers: [
                 .authorization(.bearer(accessToken)),
             ],
@@ -64,19 +64,19 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func url(queries: [String: String]) -> Self {
-        Self(
+    static func url(queries: [String: String]) -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: "/urlQueries",
-            method: .GET,
+            method: .get,
             headers: [],
             parameter: .url(queries: queries)
         )
     }
     
-    static func body(data: Data) -> Self {
-        Self(
+    static func body(data: Data) -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: "/bodyWithData",
-            method: .POST,
+            method: .post,
             headers: [
                 .contentType(.json)
             ],
@@ -84,10 +84,10 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func body(encodable: Encodable) -> Self {
-        Self(
+    static func body(encodable: Encodable) -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: "/bodyWithEncodable",
-            method: .POST,
+            method: .post,
             headers: [
                 .contentType(.json)
             ],
@@ -95,106 +95,21 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static var invalidURL: Self {
-        Self(
+    static func invalidURL() -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: " /invalidURL",
-            method: .GET,
+            method: .get,
             headers: [],
             parameter: nil
         )
     }
     
-    static func jsonEncodingFailure(encodable: Encodable) -> Self {
-        Self(
+    static func jsonEncodingFailure(encodable: Encodable) -> MockAPIEndpoint {
+        MockAPIEndpoint(
             path: "/jsonEncodingFailure",
-            method: .POST,
+            method: .post,
             headers: [],
             parameter: .body(.json(encodable))
         )
     }
 }
-
-//enum MockAPIEndpoint {
-//    case plain
-//    case plainWithHeaderValue(accessToken: String)
-//    
-//    case urlQueries([String: String])
-//    case bodyWithData(Data)
-//    case bodyWithEncodable(Encodable)
-//    
-//    case invalidURL
-//    case jsonEncodingFailure(Encodable)
-//}
-//
-//extension MockAPIEndpoint: HTTPEndpointProtocol {
-//    
-//    func domain(for environment: Environment) -> String {
-//        switch self {
-//        case .invalidURL:
-//            return "https://invalid domain.example.com"
-//        default:
-//            switch environment {
-//            case .staging:
-//                return "https://staging.example.com"
-//            case .production:
-//                return "https://api.example.com"
-//            }
-//        }
-//    }
-//    
-//    var path: String {
-//        switch self {
-//        case .plain:
-//            return "/plain"
-//        case .plainWithHeaderValue:
-//            return "/plainWithHeaderValue"
-//        case .urlQueries:
-//            return "/urlQueries"
-//        case .bodyWithData:
-//            return "/bodyWithData"
-//        case .bodyWithEncodable:
-//            return "/bodyWithEncodable"
-//        case .invalidURL:
-//            return "/invalid URL"
-//        case .jsonEncodingFailure:
-//            return "/jsonEncodingFailure"
-//        }
-//    }
-//    
-//    var method: HTTPMethod {
-//        switch self {
-//        case .plain, .plainWithHeaderValue, .urlQueries, .invalidURL:
-//            return .GET
-//        case .bodyWithData, .bodyWithEncodable, .jsonEncodingFailure:
-//            return .POST
-//        }
-//    }
-//    
-//    var headers: [HTTPHeader] {
-//        switch self {
-//        case .plain, .urlQueries, .invalidURL, .jsonEncodingFailure:
-//            return []
-//        case .plainWithHeaderValue(let accessToken):
-//            return [
-//                .authorization(.bearer(accessToken)),
-//            ]
-//        case .bodyWithData, .bodyWithEncodable:
-//            return [
-//                .contentType(.json)
-//            ]
-//        }
-//    }
-//    
-//    var parameter: HTTPParameter? {
-//        switch self {
-//        case .plain, .plainWithHeaderValue, .invalidURL:
-//            return nil
-//        case .urlQueries(let queries):
-//            return .url(queries: queries)
-//        case .bodyWithData(let data):
-//            return .body(.data(data))
-//        case .bodyWithEncodable(let encodable), .jsonEncodingFailure(let encodable):
-//            return .body(.json(encodable))
-//        }
-//    }
-//}

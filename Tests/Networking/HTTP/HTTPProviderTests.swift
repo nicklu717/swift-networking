@@ -27,7 +27,7 @@ struct HTTPProviderTests {
             var successObject: MockObject?
             var failureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
-            switch await provider.fetchObject(for: .plain, type: MockObject.self) {
+            switch await provider.fetchObject(for: .plain(), type: MockObject.self) {
             case .success(let object):
                 successObject = object
             case .failure(let error):
@@ -46,7 +46,7 @@ struct HTTPProviderTests {
             var jsonDecodingFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             var otherFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
-            switch await provider.fetchObject(for: .plain, type: MockObject.self) {
+            switch await provider.fetchObject(for: .plain(), type: MockObject.self) {
             case .success(let object):
                 successObject = object
             case .failure(let error):
@@ -81,7 +81,7 @@ struct HTTPProviderTests {
             var failureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
             await withCheckedContinuation { continuation in
-                provider.fetchObjectPublisher(for: .plain, type: MockObject.self)
+                provider.fetchObjectPublisher(for: .plain(), type: MockObject.self)
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -114,7 +114,7 @@ struct HTTPProviderTests {
             var otherFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
             
             await withCheckedContinuation { continuation in
-                let publisher = provider!.fetchObjectPublisher(for: .plain, type: MockObject.self)
+                let publisher = provider!.fetchObjectPublisher(for: .plain(), type: MockObject.self)
                 provider = nil
                 publisher
                     .sink(
