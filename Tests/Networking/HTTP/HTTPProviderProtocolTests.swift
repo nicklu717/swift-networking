@@ -1,5 +1,5 @@
 //
-//  HTTPProviderTests.swift
+//  HTTPProviderProtocolTests.swift
 //  Networking
 //
 //  Created by 陸瑋恩 on 2025/7/17.
@@ -23,11 +23,11 @@ struct HTTPProviderTests {
         @Test
         func success() async throws {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
+            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)), jsonDecoder: JSONDecoder())
             var successObject: MockObject?
-            var failureError: MockAPIProvider.FetchError?
+            var failureError: HTTPProviderFetchError?
             
-            let result: Result<MockObject, MockAPIProvider.FetchError> = await provider.fetchObject(for: .plain())
+            let result: Result<MockObject, HTTPProviderFetchError> = await provider.fetchObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -42,12 +42,12 @@ struct HTTPProviderTests {
         @Test
         func jsonDecodingFailure() async throws {
             let data = "{}".data(using: .utf8)!
-            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
+            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)), jsonDecoder: JSONDecoder())
             var successObject: MockObject?
-            var jsonDecodingFailureError: MockAPIProvider.FetchError?
-            var otherFailureError: MockAPIProvider.FetchError?
+            var jsonDecodingFailureError: HTTPProviderFetchError?
+            var otherFailureError: HTTPProviderFetchError?
             
-            let result: Result<MockObject, MockAPIProvider.FetchError> = await provider.fetchObject(for: .plain())
+            let result: Result<MockObject, HTTPProviderFetchError> = await provider.fetchObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -77,10 +77,10 @@ struct HTTPProviderTests {
         @Test
         mutating func success() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
+            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)), jsonDecoder: JSONDecoder())
             var successObject: MockObject?
             var isFinished = false
-            var failureError: MockAPIProvider.FetchError?
+            var failureError: HTTPProviderFetchError?
             
             await withCheckedContinuation { continuation in
                 provider.fetchObjectPublisher(for: .plain())
@@ -105,47 +105,6 @@ struct HTTPProviderTests {
             #expect(isFinished)
             #expect(failureError == nil)
         }
-        
-        @Test
-        mutating func selfBeingReleased() async {
-            let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            var provider: MockAPIProvider? = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
-            var successObject: MockObject?
-            var isFinished = false
-            var selfBeingReleasedError: MockAPIProvider.FetchError?
-            var otherFailureError: MockAPIProvider.FetchError?
-            
-            await withCheckedContinuation { continuation in
-                let publisher: AnyPublisher<MockObject, MockAPIProvider.FetchError> = provider!.fetchObjectPublisher(for: .plain())
-                provider = nil
-                publisher
-                    .sink(
-                        receiveCompletion: {
-                            switch $0 {
-                            case .finished:
-                                isFinished = true
-                            case .failure(let error):
-                                switch error {
-                                case .selfBeingReleased:
-                                    selfBeingReleasedError = error
-                                default:
-                                    otherFailureError = error
-                                }
-                            }
-                            continuation.resume()
-                        },
-                        receiveValue: { object in
-                            successObject = object
-                        }
-                    )
-                    .store(in: &cancellables)
-            }
-            
-            #expect(successObject == nil)
-            #expect(!isFinished)
-            #expect(selfBeingReleasedError != nil)
-            #expect(otherFailureError == nil)
-        }
     }
 }
 
@@ -167,7 +126,18 @@ struct HTTPProviderTests {
 
 extension HTTPProviderTests {
     
-    class MockAPIProvider: HTTPProvider<MockAPIEndpoint> {}
+    class MockAPIProvider: HTTPProviderProtocol {
+        typealias Endpoint = MockAPIEndpoint
+        
+        let client: URLSessionClientProtocol
+        let jsonDecoder: JSONDecoder
+        
+        init(client: URLSessionClientProtocol, jsonDecoder: JSONDecoder) {
+            self.client = client
+            self.jsonDecoder = jsonDecoder
+        }
+    }
+//    class MockAPIProvider: HTTPProvider<MockAPIEndpoint> {}
     
     struct MockObject: Decodable, Equatable {
         let id: Int
