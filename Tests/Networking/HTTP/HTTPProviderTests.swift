@@ -23,11 +23,12 @@ struct HTTPProviderTests {
         @Test
         func success() async throws {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = HTTPProvider<MockAPIEndpoint>(client: MockURLSessionClient(mockResult: .success(data)))
+            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
-            var failureError: HTTPProvider<MockAPIEndpoint>.FetchError?
+            var failureError: MockAPIProvider.FetchError?
             
-            switch await provider.fetchObject(for: .plain(), type: MockObject.self) {
+            let result: Result<MockObject, MockAPIProvider.FetchError> = await provider.fetchObject(for: .plain())
+            switch result {
             case .success(let object):
                 successObject = object
             case .failure(let error):
@@ -41,12 +42,13 @@ struct HTTPProviderTests {
         @Test
         func jsonDecodingFailure() async throws {
             let data = "{}".data(using: .utf8)!
-            let provider = HTTPProvider<MockAPIEndpoint>(client: MockURLSessionClient(mockResult: .success(data)))
+            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
-            var jsonDecodingFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
-            var otherFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
+            var jsonDecodingFailureError: MockAPIProvider.FetchError?
+            var otherFailureError: MockAPIProvider.FetchError?
             
-            switch await provider.fetchObject(for: .plain(), type: MockObject.self) {
+            let result: Result<MockObject, MockAPIProvider.FetchError> = await provider.fetchObject(for: .plain())
+            switch result {
             case .success(let object):
                 successObject = object
             case .failure(let error):
@@ -75,13 +77,13 @@ struct HTTPProviderTests {
         @Test
         mutating func success() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = HTTPProvider<MockAPIEndpoint>(client: MockURLSessionClient(mockResult: .success(data)))
+            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
             var isFinished = false
-            var failureError: HTTPProvider<MockAPIEndpoint>.FetchError?
+            var failureError: MockAPIProvider.FetchError?
             
             await withCheckedContinuation { continuation in
-                provider.fetchObjectPublisher(for: .plain(), type: MockObject.self)
+                provider.fetchObjectPublisher(for: .plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -107,14 +109,14 @@ struct HTTPProviderTests {
         @Test
         mutating func selfBeingReleased() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            var provider: HTTPProvider<MockAPIEndpoint>? = HTTPProvider(client: MockURLSessionClient(mockResult: .success(data)))
+            var provider: MockAPIProvider? = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)))
             var successObject: MockObject?
             var isFinished = false
-            var selfBeingReleasedError: HTTPProvider<MockAPIEndpoint>.FetchError?
-            var otherFailureError: HTTPProvider<MockAPIEndpoint>.FetchError?
+            var selfBeingReleasedError: MockAPIProvider.FetchError?
+            var otherFailureError: MockAPIProvider.FetchError?
             
             await withCheckedContinuation { continuation in
-                let publisher = provider!.fetchObjectPublisher(for: .plain(), type: MockObject.self)
+                let publisher: AnyPublisher<MockObject, MockAPIProvider.FetchError> = provider!.fetchObjectPublisher(for: .plain())
                 provider = nil
                 publisher
                     .sink(
@@ -164,6 +166,8 @@ struct HTTPProviderTests {
     }
 
 extension HTTPProviderTests {
+    
+    class MockAPIProvider: HTTPProvider<MockAPIEndpoint> {}
     
     struct MockObject: Decodable, Equatable {
         let id: Int

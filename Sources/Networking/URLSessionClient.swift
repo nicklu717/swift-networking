@@ -33,7 +33,7 @@ extension URLSessionClientProtocol {
 public class URLSessionClient: URLSessionClientProtocol {
     private let urlSession: URLSessionProtocol
     
-    public init(urlSession: URLSessionProtocol = URLSession.shared) {
+    public init(urlSession: URLSessionProtocol) {
         self.urlSession = urlSession
     }
     

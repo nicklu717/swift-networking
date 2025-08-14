@@ -9,6 +9,9 @@ import Foundation
 import Combine
 
 open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
+    public typealias FetchResult<T> = Result<T, FetchError>
+    public typealias FetchPublisher<T> = AnyPublisher<T, FetchError>
+    
     private let client: URLSessionClientProtocol
     
     public init(client: URLSessionClientProtocol) {
@@ -16,28 +19,28 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
     }
     
     // MARK: - Async
-    open func fetchObject<T>(for endpoint: Endpoint, type: T.Type) async -> Result<T, FetchError> where T: Decodable {
+    open func fetchObject<T>(for endpoint: Endpoint) async -> FetchResult<T> where T: Decodable {
         return await fetchData(for: endpoint).flatMap { decode(data: $0) }
     }
     
-    private func fetchData(for endpoint: Endpoint) async -> Result<Data, FetchError> {
+    private func fetchData(for endpoint: Endpoint) async -> FetchResult<Data> {
         return await makeRequest(for: endpoint)
             .asyncFlatMap { await client.fetchData(request: $0).mapError { .urlSessionClientError($0) } }
     }
     
     // MARK: - Combine
-    open func fetchObjectPublisher<T>(for endpoint: Endpoint, type: T.Type) -> AnyPublisher<T, FetchError> where T: Decodable {
+    open func fetchObjectPublisher<T>(for endpoint: Endpoint) -> FetchPublisher<T> where T: Decodable {
         return fetchDataPublisher(for: endpoint)
-            .flatMap { [weak self] data -> AnyPublisher<T, FetchError> in
+            .flatMap { [weak self] data -> FetchPublisher<T> in
                 guard let self = self else { return Fail(outputType: T.self, failure: .selfBeingReleased).eraseToAnyPublisher() }
                 return self.decode(data: data).publisher.eraseToAnyPublisher()
             }
             .eraseToAnyPublisher()
     }
     
-    private func fetchDataPublisher(for endpoint: Endpoint) -> AnyPublisher<Data, FetchError> {
+    private func fetchDataPublisher(for endpoint: Endpoint) -> FetchPublisher<Data> {
         return makeRequest(for: endpoint).publisher
-            .flatMap { [weak self] request -> AnyPublisher<Data, FetchError> in
+            .flatMap { [weak self] request -> FetchPublisher<Data> in
                 guard let self = self else { return Fail(outputType: Data.self, failure: .selfBeingReleased).eraseToAnyPublisher() }
                 return client.fetchDataPublisher(request: request, resultAfterCancelledHandler: nil)
                     .mapError { .urlSessionClientError($0) }
@@ -48,11 +51,11 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
 }
 
 extension HTTPProvider {
-    private func makeRequest(for endpoint: Endpoint) -> Result<URLRequest, FetchError> {
+    private func makeRequest(for endpoint: Endpoint) -> FetchResult<URLRequest> {
         return endpoint.makeRequest().mapError { .makeRequestError($0) }
     }
     
-    private func decode<T>(data: Data) -> Result<T, FetchError> where T: Decodable {
+    private func decode<T>(data: Data) -> FetchResult<T> where T: Decodable {
         do {
             return .success(try JSONDecoder().decode(T.self, from: data))
         } catch {
