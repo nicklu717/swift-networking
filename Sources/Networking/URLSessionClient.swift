@@ -8,36 +8,17 @@
 import Foundation
 import Combine
 
-public protocol URLSessionClientProtocol {
-    func fetchData(request: URLRequest) async -> Result<Data, URLSessionClient.FetchError>
+open class URLSessionClient {
+    public typealias TaskResult = Result<Data, FetchError>
+    public typealias TaskPublisher = AnyPublisher<Data, FetchError>
     
-    func fetchDataPublisher(
-        request: URLRequest,
-        resultAfterCancelledHandler: ((Result<Data, URLSessionClient.FetchError>) -> Void)?
-    ) -> AnyPublisher<Data, URLSessionClient.FetchError>
-}
-
-extension URLSessionClientProtocol {
-    func fetchData(url: URL) async -> Result<Data, URLSessionClient.FetchError> {
-        return await fetchData(request: URLRequest(url: url))
-    }
-    
-    func fetchDataPublisher(
-        url: URL,
-        resultAfterCancelledHandler: ((Result<Data, URLSessionClient.FetchError>) -> Void)?
-    ) -> AnyPublisher<Data, URLSessionClient.FetchError> {
-        return fetchDataPublisher(request: URLRequest(url: url), resultAfterCancelledHandler: resultAfterCancelledHandler)
-    }
-}
-
-public class URLSessionClient: URLSessionClientProtocol {
     private let urlSession: URLSessionProtocol
     
     public init(urlSession: URLSessionProtocol) {
         self.urlSession = urlSession
     }
     
-    public func fetchData(request: URLRequest) async -> Result<Data, FetchError> {
+    open func fetchData(request: URLRequest) async -> TaskResult {
         do {
             let (data, response) = try await urlSession.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -54,15 +35,15 @@ public class URLSessionClient: URLSessionClientProtocol {
         }
     }
     
-    public func fetchDataPublisher(
+    open func fetchDataPublisher(
         request: URLRequest,
-        resultAfterCancelledHandler: ((Result<Data, FetchError>) -> Void)? = nil
-    ) -> AnyPublisher<Data, FetchError> {
+        resultAfterCancelledHandler: ((TaskResult) -> Void)? = nil
+    ) -> TaskPublisher {
         var underlyingTask: Task<Void, Never>?
         return Deferred { [weak self] in
             Future { promise in
                 underlyingTask = Task {
-                    let result: Result<Data, FetchError> = await {
+                    let result: TaskResult = await {
                         guard let self = self else { return .failure(.selfBeingReleased) }
                         return await self.fetchData(request: request)
                     }()
@@ -80,6 +61,17 @@ public class URLSessionClient: URLSessionClientProtocol {
             }
         )
         .eraseToAnyPublisher()
+    }
+    
+    public func fetchData(url: URL) async -> TaskResult {
+        return await fetchData(request: URLRequest(url: url))
+    }
+    
+    public func fetchDataPublisher(
+        url: URL,
+        resultAfterCancelledHandler: ((TaskResult) -> Void)?
+    ) -> TaskPublisher {
+        return fetchDataPublisher(request: URLRequest(url: url), resultAfterCancelledHandler: resultAfterCancelledHandler)
     }
 }
 

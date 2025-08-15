@@ -17,7 +17,7 @@ public enum HTTPProviderFetchError: Error {
 public protocol HTTPProviderProtocol {
     associatedtype Endpoint: HTTPEndpoint
     
-    var client: URLSessionClientProtocol { get }
+    var client: URLSessionClient { get }
     var jsonDecoder: JSONDecoder { get }
     
     typealias FetchResult<T> = Result<T, HTTPProviderFetchError>

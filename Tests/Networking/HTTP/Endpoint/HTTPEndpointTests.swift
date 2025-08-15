@@ -18,7 +18,7 @@ struct HTTPEndpointTests {
         
         @Test
         func success() throws {
-            let endpoints: [MockAPIEndpoint] = [
+            let endpoints: [TestAPIEndpoint] = [
                 .plain(),
                 .plainWithHeaderValue(accessToken: "mock_access_token"),
                 .url(queries: ["product_id": "12345"]),
@@ -27,7 +27,7 @@ struct HTTPEndpointTests {
             ]
             try endpoints.forEach { endpoint in
                 var successRequest: URLRequest?
-                var failureError: MockAPIEndpoint.MakeRequestError?
+                var failureError: TestAPIEndpoint.MakeRequestError?
                 
                 switch endpoint.makeRequest() {
                 case .success(let request):
@@ -70,10 +70,10 @@ struct HTTPEndpointTests {
         
         @Test
         func invalidURL() {
-            let endpoint: MockAPIEndpoint = .invalidURL()
+            let endpoint: TestAPIEndpoint = .invalidURL()
             var successRequest: URLRequest?
-            var invalidURLError: MockAPIEndpoint.MakeRequestError?
-            var otherFailureError: MockAPIEndpoint.MakeRequestError?
+            var invalidURLError: TestAPIEndpoint.MakeRequestError?
+            var otherFailureError: TestAPIEndpoint.MakeRequestError?
             
             switch endpoint.makeRequest() {
             case .success(let request):
@@ -94,10 +94,10 @@ struct HTTPEndpointTests {
         
         @Test
         func jsonEncodingFailure() {
-            let endpoint: MockAPIEndpoint = .jsonEncodingFailure(encodable: InvalidEncodable())
+            let endpoint: TestAPIEndpoint = .jsonEncodingFailure(encodable: InvalidEncodable())
             var successRequest: URLRequest?
-            var jsonEncodingFailureError: MockAPIEndpoint.MakeRequestError?
-            var otherFailureError: MockAPIEndpoint.MakeRequestError?
+            var jsonEncodingFailureError: TestAPIEndpoint.MakeRequestError?
+            var otherFailureError: TestAPIEndpoint.MakeRequestError?
             
             switch endpoint.makeRequest() {
             case .success(let request):

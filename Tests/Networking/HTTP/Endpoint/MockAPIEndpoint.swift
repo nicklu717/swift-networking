@@ -1,5 +1,5 @@
 //
-//  MockAPIEndpoint.swift
+//  TestAPIEndpoint.swift
 //  Networking
 //
 //  Created by 陸瑋恩 on 2025/7/5.
@@ -9,25 +9,25 @@ import Foundation
 
 @testable import Networking
 
-class MockAppSettings {
-    static let shared = MockAppSettings()
+class TestAppSettings {
+    static let shared = TestAppSettings()
     
-    enum MockAPIEnvironment: CaseIterable {
+    enum TestAPIEnvironment: CaseIterable {
         case staging, production
-        
-        var mockAPIDomain: String {
-            switch self {
-            case .staging:
-                return "https://staging.example.com"
-            case .production:
-                return "https://api.example.com"
-            }
+    }
+    let currentTestAPIEnvironment: TestAPIEnvironment = .staging
+    
+    var testAPIDomain: String {
+        switch currentTestAPIEnvironment {
+        case .staging:
+            return "https://staging.example.com"
+        case .production:
+            return "https://api.example.com"
         }
     }
-    let currentMockAPIEnvironment: MockAPIEnvironment = .staging
 }
 
-class MockAPIEndpoint: HTTPEndpoint {
+class TestAPIEndpoint: HTTPEndpoint {
     
     init(
         path: String,
@@ -36,7 +36,7 @@ class MockAPIEndpoint: HTTPEndpoint {
         parameter: HTTPParameter?
     ) {
         super.init(
-            domain: { MockAppSettings.shared.currentMockAPIEnvironment.mockAPIDomain },
+            domain: { TestAppSettings.shared.testAPIDomain },
             path: path,
             method: method,
             headers: headers,
@@ -44,8 +44,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func plain() -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func plain() -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: "/plain",
             method: .get,
             headers: [],
@@ -53,8 +53,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func plainWithHeaderValue(accessToken: String) -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func plainWithHeaderValue(accessToken: String) -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: "/plainWithHeaderValue",
             method: .get,
             headers: [
@@ -65,8 +65,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func url(queries: [String: String]) -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func url(queries: [String: String]) -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: "/urlQueries",
             method: .get,
             headers: [],
@@ -74,8 +74,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func body(data: Data) -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func body(data: Data) -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: "/bodyWithData",
             method: .post,
             headers: [],
@@ -83,8 +83,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func body(encodable: Encodable) -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func body(encodable: Encodable) -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: "/bodyWithEncodable",
             method: .post,
             headers: [],
@@ -92,8 +92,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func invalidURL() -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func invalidURL() -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: " /invalidURL",
             method: .get,
             headers: [],
@@ -101,8 +101,8 @@ class MockAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func jsonEncodingFailure(encodable: Encodable) -> MockAPIEndpoint {
-        MockAPIEndpoint(
+    static func jsonEncodingFailure(encodable: Encodable) -> TestAPIEndpoint {
+        TestAPIEndpoint(
             path: "/jsonEncodingFailure",
             method: .post,
             headers: [],

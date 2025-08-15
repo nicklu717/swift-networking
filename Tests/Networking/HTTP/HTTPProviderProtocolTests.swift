@@ -12,10 +12,11 @@ import Combine
 @testable import Networking
 
 @Suite
-struct HTTPProviderTests {
+struct HTTPProviderProtocolTests {
     
     @Suite
     struct FetchObjectTests {
+        typealias FetchResult = TestAPIProvider.FetchResult<TestObject>
         
         let mockID = 1
         let mockName = "Test"
@@ -23,11 +24,11 @@ struct HTTPProviderTests {
         @Test
         func success() async throws {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)), jsonDecoder: JSONDecoder())
-            var successObject: MockObject?
+            let provider = TestAPIProvider(mockTaskResult: .success(data))
+            var successObject: TestObject?
             var failureError: HTTPProviderFetchError?
             
-            let result: Result<MockObject, HTTPProviderFetchError> = await provider.fetchObject(for: .plain())
+            let result: FetchResult = await provider.fetchObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -35,19 +36,19 @@ struct HTTPProviderTests {
                 failureError = error
             }
             
-            #expect(successObject == MockObject(id: mockID, name: mockName))
+            #expect(successObject == TestObject(id: mockID, name: mockName))
             #expect(failureError == nil)
         }
         
         @Test
         func jsonDecodingFailure() async throws {
             let data = "{}".data(using: .utf8)!
-            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)), jsonDecoder: JSONDecoder())
-            var successObject: MockObject?
+            let provider = TestAPIProvider(mockTaskResult: .success(data))
+            var successObject: TestObject?
             var jsonDecodingFailureError: HTTPProviderFetchError?
             var otherFailureError: HTTPProviderFetchError?
             
-            let result: Result<MockObject, HTTPProviderFetchError> = await provider.fetchObject(for: .plain())
+            let result: FetchResult = await provider.fetchObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -64,6 +65,32 @@ struct HTTPProviderTests {
             #expect(jsonDecodingFailureError != nil)
             #expect(otherFailureError == nil)
         }
+        
+//        @Test
+//        func jsonDecodingFailure() async throws {
+//            let data = "{}".data(using: .utf8)!
+//            let provider = TestAPIProvider(mockTaskResult: .success(data))
+//            var successObject: TestObject?
+//            var jsonDecodingFailureError: HTTPProviderFetchError?
+//            var otherFailureError: HTTPProviderFetchError?
+//            
+//            let result: FetchResult = await provider.fetchObject(for: .plain())
+//            switch result {
+//            case .success(let object):
+//                successObject = object
+//            case .failure(let error):
+//                switch error {
+//                case .jsonDecodingFailure:
+//                    jsonDecodingFailureError = error
+//                default:
+//                    otherFailureError = error
+//                }
+//            }
+//            
+//            #expect(successObject == nil)
+//            #expect(jsonDecodingFailureError != nil)
+//            #expect(otherFailureError == nil)
+//        }
     }
     
     @Suite
@@ -77,8 +104,8 @@ struct HTTPProviderTests {
         @Test
         mutating func success() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
-            let provider = MockAPIProvider(client: MockURLSessionClient(mockResult: .success(data)), jsonDecoder: JSONDecoder())
-            var successObject: MockObject?
+            let provider = TestAPIProvider(mockTaskResult: .success(data))
+            var successObject: TestObject?
             var isFinished = false
             var failureError: HTTPProviderFetchError?
             
@@ -101,45 +128,51 @@ struct HTTPProviderTests {
                     .store(in: &cancellables)
             }
             
-            #expect(successObject == MockObject(id: mockID, name: mockName))
+            #expect(successObject == TestObject(id: mockID, name: mockName))
             #expect(isFinished)
             #expect(failureError == nil)
         }
     }
 }
 
-    class MockURLSessionClient: URLSessionClientProtocol {
-        let mockResult: Result<Data, URLSessionClient.FetchError>
-        
-        init(mockResult: Result<Data, URLSessionClient.FetchError>) {
-            self.mockResult = mockResult
-        }
-        
-        func fetchData(request: URLRequest) async -> Result<Data, URLSessionClient.FetchError> {
-            return mockResult
-        }
-        
-        func fetchDataPublisher(request: URLRequest, resultAfterCancelledHandler: ((Result<Data, Networking.URLSessionClient.FetchError>) -> Void)?) -> AnyPublisher<Data, Networking.URLSessionClient.FetchError> {
-            return mockResult.publisher.eraseToAnyPublisher()
-        }
-    }
-
-extension HTTPProviderTests {
+extension HTTPProviderProtocolTests {
     
-    class MockAPIProvider: HTTPProviderProtocol {
-        typealias Endpoint = MockAPIEndpoint
+    class TestAPIProvider: HTTPProviderProtocol {
+        typealias Endpoint = TestAPIEndpoint
         
-        let client: URLSessionClientProtocol
+        let client: URLSessionClient
         let jsonDecoder: JSONDecoder
         
-        init(client: URLSessionClientProtocol, jsonDecoder: JSONDecoder) {
-            self.client = client
-            self.jsonDecoder = jsonDecoder
+        init(mockTaskResult: URLSessionClient.TaskResult) {
+            self.client = MockURLSessionClient(mockTaskResult: mockTaskResult)
+            self.jsonDecoder = JSONDecoder()
+        }
+        
+        class MockURLSessionClient: URLSessionClient {
+            let mockTaskResult: TaskResult
+            
+            init(mockTaskResult: TaskResult) {
+                self.mockTaskResult = mockTaskResult
+                super.init(urlSession: DummyURLSession())
+            }
+            
+            override func fetchData(request: URLRequest) async -> TaskResult {
+                return mockTaskResult
+            }
+            
+            override func fetchDataPublisher(request: URLRequest, resultAfterCancelledHandler: ((Result<Data, Networking.URLSessionClient.FetchError>) -> Void)?) -> TaskPublisher {
+                return mockTaskResult.publisher.eraseToAnyPublisher()
+            }
+            
+            class DummyURLSession: URLSessionProtocol {
+                func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+                    return (Data(), URLResponse())
+                }
+            }
         }
     }
-//    class MockAPIProvider: HTTPProvider<MockAPIEndpoint> {}
     
-    struct MockObject: Decodable, Equatable {
+    struct TestObject: Decodable, Equatable {
         let id: Int
         let name: String
         
