@@ -46,7 +46,7 @@ struct HTTPEndpointTests {
                 #expect(request.url?.absoluteString == endpoint.domain() + endpoint.path + queryString)
                 #expect(request.httpMethod == endpoint.method.rawValue)
                 #expect(request.allHTTPHeaderFields?.count == endpoint.headers.count)
-                endpoint.headers.map(\.entry).forEach {
+                endpoint.headers.forEach {
                     #expect(request.value(forHTTPHeaderField: $0.field.rawName) == $0.value)
                 }
                 if let parameter = endpoint.parameter {

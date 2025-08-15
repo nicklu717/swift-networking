@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HTTPTypes
 
 open class HTTPEndpoint {
     let domain: () -> String
@@ -29,7 +28,7 @@ open class HTTPEndpoint {
         
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
-        headers.map(\.entry).forEach {
+        headers.forEach {
             request.setValue($0.value, forHTTPHeaderField: $0.field.rawName)
         }
         if let parameter {

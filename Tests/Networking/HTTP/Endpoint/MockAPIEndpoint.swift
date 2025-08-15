@@ -58,7 +58,8 @@ class MockAPIEndpoint: HTTPEndpoint {
             path: "/plainWithHeaderValue",
             method: .get,
             headers: [
-                .authorization(.bearer(token: accessToken)),
+                HTTPHeader(.authorization, accessToken),
+                HTTPHeader("apikey", accessToken)
             ],
             parameter: nil
         )
@@ -77,9 +78,7 @@ class MockAPIEndpoint: HTTPEndpoint {
         MockAPIEndpoint(
             path: "/bodyWithData",
             method: .post,
-            headers: [
-                .contentType(.json)
-            ],
+            headers: [],
             parameter: .body(.data(data))
         )
     }
@@ -88,9 +87,7 @@ class MockAPIEndpoint: HTTPEndpoint {
         MockAPIEndpoint(
             path: "/bodyWithEncodable",
             method: .post,
-            headers: [
-                .contentType(.json)
-            ],
+            headers: [],
             parameter: .body(.json(encodable))
         )
     }
