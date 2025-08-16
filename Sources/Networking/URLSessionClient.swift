@@ -9,8 +9,8 @@ import Foundation
 import Combine
 
 open class URLSessionClient {
-    public typealias TaskResult = Result<Data, FetchError>
-    public typealias TaskPublisher = AnyPublisher<Data, FetchError>
+    public typealias RequestResult = Result<Data, RequestError>
+    public typealias RequestPublisher = AnyPublisher<Data, RequestError>
     
     private let urlSession: URLSessionProtocol
     
@@ -18,7 +18,7 @@ open class URLSessionClient {
         self.urlSession = urlSession
     }
     
-    open func fetchData(request: URLRequest) async -> TaskResult {
+    open func requestData(request: URLRequest) async -> RequestResult {
         do {
             let (data, response) = try await urlSession.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -35,17 +35,17 @@ open class URLSessionClient {
         }
     }
     
-    open func fetchDataPublisher(
+    open func requestDataPublisher(
         request: URLRequest,
-        resultAfterCancelledHandler: ((TaskResult) -> Void)? = nil
-    ) -> TaskPublisher {
+        resultAfterCancelledHandler: ((RequestResult) -> Void)? = nil
+    ) -> RequestPublisher {
         var underlyingTask: Task<Void, Never>?
         return Deferred { [weak self] in
             Future { promise in
                 underlyingTask = Task {
-                    let result: TaskResult = await {
+                    let result: RequestResult = await {
                         guard let self = self else { return .failure(.selfBeingReleased) }
-                        return await self.fetchData(request: request)
+                        return await self.requestData(request: request)
                     }()
                     if Task.isCancelled {
                         resultAfterCancelledHandler?(result)
@@ -63,21 +63,21 @@ open class URLSessionClient {
         .eraseToAnyPublisher()
     }
     
-    public func fetchData(url: URL) async -> TaskResult {
-        return await fetchData(request: URLRequest(url: url))
+    public func requestData(url: URL) async -> RequestResult {
+        return await requestData(request: URLRequest(url: url))
     }
     
-    public func fetchDataPublisher(
+    public func requestDataPublisher(
         url: URL,
-        resultAfterCancelledHandler: ((TaskResult) -> Void)?
-    ) -> TaskPublisher {
-        return fetchDataPublisher(request: URLRequest(url: url), resultAfterCancelledHandler: resultAfterCancelledHandler)
+        resultAfterCancelledHandler: ((RequestResult) -> Void)?
+    ) -> RequestPublisher {
+        return requestDataPublisher(request: URLRequest(url: url), resultAfterCancelledHandler: resultAfterCancelledHandler)
     }
 }
 
-// MARK: - Fetch Error
+// MARK: - Request Error
 extension URLSessionClient {
-    public enum FetchError: Error {
+    public enum RequestError: Error {
         case notHTTPResponse(URLResponse)
         case requestFailure(statusCode: Int, Data)
         case urlSessionError(Error)

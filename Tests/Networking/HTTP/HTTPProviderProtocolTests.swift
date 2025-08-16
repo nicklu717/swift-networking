@@ -15,8 +15,8 @@ import Combine
 struct HTTPProviderProtocolTests {
     
     @Suite
-    struct FetchObjectTests {
-        typealias FetchResult = TestAPIProvider.FetchResult<TestObject>
+    struct RequestObjectTests {
+        typealias RequestResult = TestAPIProvider.RequestResult<TestObject>
         
         let mockID = 1
         let mockName = "Test"
@@ -26,9 +26,9 @@ struct HTTPProviderProtocolTests {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
             let provider = TestAPIProvider(testCase: .success(data))
             var successObject: TestObject?
-            var failureError: HTTPProviderFetchError?
+            var failureError: HTTPProviderRequestError?
             
-            let result: FetchResult = await provider.fetchObject(for: .plain())
+            let result: RequestResult = await provider.requestObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -44,10 +44,10 @@ struct HTTPProviderProtocolTests {
         func urlSessionClientError() async throws {
             let provider = TestAPIProvider(testCase: .urlSessionClientError)
             var successObject: TestObject?
-            var urlSessionClientError: HTTPProviderFetchError?
-            var otherFailureError: HTTPProviderFetchError?
+            var urlSessionClientError: HTTPProviderRequestError?
+            var otherFailureError: HTTPProviderRequestError?
             
-            let result: FetchResult = await provider.fetchObject(for: .plain())
+            let result: RequestResult = await provider.requestObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -69,10 +69,10 @@ struct HTTPProviderProtocolTests {
         func makeRequestError() async throws {
             let provider = TestAPIProvider(testCase: .makeRequestError)
             var successObject: TestObject?
-            var makeRequestError: HTTPProviderFetchError?
-            var otherFailureError: HTTPProviderFetchError?
+            var makeRequestError: HTTPProviderRequestError?
+            var otherFailureError: HTTPProviderRequestError?
             
-            let result: FetchResult = await provider.fetchObject(for: .invalidURL())
+            let result: RequestResult = await provider.requestObject(for: .invalidURL())
             switch result {
             case .success(let object):
                 successObject = object
@@ -94,10 +94,10 @@ struct HTTPProviderProtocolTests {
         func jsonDecodingFailure() async throws {
             let provider = TestAPIProvider(testCase: .jsonDecodingFailure(Data()))
             var successObject: TestObject?
-            var jsonDecodingFailureError: HTTPProviderFetchError?
-            var otherFailureError: HTTPProviderFetchError?
+            var jsonDecodingFailureError: HTTPProviderRequestError?
+            var otherFailureError: HTTPProviderRequestError?
             
-            let result: FetchResult = await provider.fetchObject(for: .plain())
+            let result: RequestResult = await provider.requestObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -117,7 +117,7 @@ struct HTTPProviderProtocolTests {
     }
     
     @Suite
-    struct FetchObjectPublisherTests {
+    struct RequestObjectPublisherTests {
         
         var cancellables = Set<AnyCancellable>()
         
@@ -130,10 +130,10 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .success(data))
             var successObject: TestObject?
             var isFinished = false
-            var failureError: HTTPProviderFetchError?
+            var failureError: HTTPProviderRequestError?
             
             await withCheckedContinuation { continuation in
-                provider.fetchObjectPublisher(for: .plain())
+                provider.requestObjectPublisher(for: .plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -161,11 +161,11 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .urlSessionClientError)
             var successObject: TestObject?
             var isFinished = false
-            var urlSessionClientError: HTTPProviderFetchError?
-            var otherFailureError: HTTPProviderFetchError?
+            var urlSessionClientError: HTTPProviderRequestError?
+            var otherFailureError: HTTPProviderRequestError?
             
             await withCheckedContinuation { continuation in
-                provider.fetchObjectPublisher(for: .plain())
+                provider.requestObjectPublisher(for: .plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -199,11 +199,11 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .makeRequestError)
             var successObject: TestObject?
             var isFinished = false
-            var makeRequestError: HTTPProviderFetchError?
-            var otherFailureError: HTTPProviderFetchError?
+            var makeRequestError: HTTPProviderRequestError?
+            var otherFailureError: HTTPProviderRequestError?
             
             await withCheckedContinuation { continuation in
-                provider.fetchObjectPublisher(for: .invalidURL())
+                provider.requestObjectPublisher(for: .invalidURL())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -237,11 +237,11 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .jsonDecodingFailure(Data()))
             var successObject: TestObject?
             var isFinished = false
-            var jsonDecodingFailure: HTTPProviderFetchError?
-            var otherFailureError: HTTPProviderFetchError?
+            var jsonDecodingFailure: HTTPProviderRequestError?
+            var otherFailureError: HTTPProviderRequestError?
             
             await withCheckedContinuation { continuation in
-                provider.fetchObjectPublisher(for: .plain())
+                provider.requestObjectPublisher(for: .plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -290,9 +290,9 @@ extension HTTPProviderProtocolTests {
         init(testCase: TestCase) {
             switch testCase {
             case .success(let data), .jsonDecodingFailure(let data):
-                self.client = MockURLSessionClient(mockTaskResult: .success(data))
+                self.client = MockURLSessionClient(mockRequestResult: .success(data))
             case .urlSessionClientError:
-                self.client = MockURLSessionClient(mockTaskResult: .failure(.selfBeingReleased))
+                self.client = MockURLSessionClient(mockRequestResult: .failure(.selfBeingReleased))
             case .makeRequestError:
                 self.client = DummyURLSessionClient()
             }
@@ -300,19 +300,22 @@ extension HTTPProviderProtocolTests {
         }
         
         class MockURLSessionClient: URLSessionClient {
-            let mockTaskResult: TaskResult
+            let mockRequestResult: RequestResult
             
-            init(mockTaskResult: TaskResult) {
-                self.mockTaskResult = mockTaskResult
+            init(mockRequestResult: RequestResult) {
+                self.mockRequestResult = mockRequestResult
                 super.init(urlSession: DummyURLSession())
             }
             
-            override func fetchData(request: URLRequest) async -> TaskResult {
-                return mockTaskResult
+            override func requestData(request: URLRequest) async -> RequestResult {
+                return mockRequestResult
             }
             
-            override func fetchDataPublisher(request: URLRequest, resultAfterCancelledHandler: ((Result<Data, Networking.URLSessionClient.FetchError>) -> Void)?) -> TaskPublisher {
-                return mockTaskResult.publisher.eraseToAnyPublisher()
+            override func requestDataPublisher(
+                request: URLRequest,
+                resultAfterCancelledHandler: ((RequestResult) -> Void)?
+            ) -> RequestPublisher {
+                return mockRequestResult.publisher.eraseToAnyPublisher()
             }
             
             class DummyURLSession: URLSessionProtocol {

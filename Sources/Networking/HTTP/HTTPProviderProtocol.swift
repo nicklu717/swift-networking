@@ -8,8 +8,8 @@
 import Foundation
 import Combine
 
-public enum HTTPProviderFetchError: Error {
-    case urlSessionClientError(URLSessionClient.FetchError)
+public enum HTTPProviderRequestError: Error {
+    case urlSessionClientError(URLSessionClient.RequestError)
     case makeRequestError(HTTPEndpoint.MakeRequestError)
     case jsonDecodingFailure(Error)
 }
@@ -17,52 +17,53 @@ public enum HTTPProviderFetchError: Error {
 public protocol HTTPProviderProtocol {
     associatedtype Endpoint: HTTPEndpoint
     
+    typealias RequestError = HTTPProviderRequestError
+    typealias RequestResult<T> = Result<T, HTTPProviderRequestError>
+    typealias RequestPublisher<T> = AnyPublisher<T, HTTPProviderRequestError>
+    
     var client: URLSessionClient { get }
     var jsonDecoder: JSONDecoder { get }
     
-    typealias FetchResult<T> = Result<T, HTTPProviderFetchError>
-    typealias FetchPublisher<T> = AnyPublisher<T, HTTPProviderFetchError>
-    
-    func fetchObject<T: Decodable>(for endpoint: Endpoint) async -> FetchResult<T>
-    func fetchObjectPublisher<T: Decodable>(for endpoint: Endpoint) -> FetchPublisher<T>
+    func requestObject<T: Decodable>(for endpoint: Endpoint) async -> RequestResult<T>
+    func requestObjectPublisher<T: Decodable>(for endpoint: Endpoint) -> RequestPublisher<T>
 }
 
 public extension HTTPProviderProtocol {
     // MARK: - Async
-    func fetchObject<T>(for endpoint: Endpoint) async -> FetchResult<T> where T: Decodable {
-        return await fetchData(for: endpoint).flatMap { decode(data: $0) }
+    func requestObject<T>(for endpoint: Endpoint) async -> RequestResult<T> where T: Decodable {
+        return await requestData(for: endpoint).flatMap { decode(data: $0) }
     }
     
-    private func fetchData(for endpoint: Endpoint) async -> FetchResult<Data> {
+    private func requestData(for endpoint: Endpoint) async -> RequestResult<Data> {
         return await makeRequest(for: endpoint)
             .asyncFlatMap {
-                await client.fetchData(request: $0)
+                await client.requestData(request: $0)
                     .mapError { .urlSessionClientError($0) }
             }
     }
     
     // MARK: - Combine
-    func fetchObjectPublisher<T>(for endpoint: Endpoint) -> FetchPublisher<T> where T: Decodable {
-        return fetchDataPublisher(for: endpoint)
+    func requestObjectPublisher<T>(for endpoint: Endpoint) -> RequestPublisher<T> where T: Decodable {
+        return requestDataPublisher(for: endpoint)
             .flatMap { decode(data: $0).publisher.eraseToAnyPublisher() }
             .eraseToAnyPublisher()
     }
     
-    private func fetchDataPublisher(for endpoint: Endpoint) -> FetchPublisher<Data> {
+    private func requestDataPublisher(for endpoint: Endpoint) -> RequestPublisher<Data> {
         return makeRequest(for: endpoint).publisher
             .flatMap {
-                client.fetchDataPublisher(request: $0, resultAfterCancelledHandler: nil)
+                client.requestDataPublisher(request: $0, resultAfterCancelledHandler: nil)
                     .mapError { .urlSessionClientError($0) }
                     .eraseToAnyPublisher()
             }
             .eraseToAnyPublisher()
     }
     
-    private func makeRequest(for endpoint: Endpoint) -> FetchResult<URLRequest> {
+    private func makeRequest(for endpoint: Endpoint) -> RequestResult<URLRequest> {
         return endpoint.makeRequest().mapError { .makeRequestError($0) }
     }
     
-    private func decode<T>(data: Data) -> FetchResult<T> where T: Decodable {
+    private func decode<T>(data: Data) -> RequestResult<T> where T: Decodable {
         do {
             return .success(try jsonDecoder.decode(T.self, from: data))
         } catch {

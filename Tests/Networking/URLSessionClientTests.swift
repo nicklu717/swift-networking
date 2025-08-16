@@ -17,15 +17,15 @@ enum URLSessionClientTests {
     static let mockURL = URL(string: "https://example.com")!
     
     @Suite
-    struct FetchDataTests {
+    struct RequestDataTests {
         
         @Test
         func success() async {
             let client = TestURLSessionClient(testCase: .success)
             var successData: Data?
-            var failureError: URLSessionClient.FetchError?
+            var failureError: URLSessionClient.RequestError?
             
-            switch await client.fetchData(url: mockURL) {
+            switch await client.requestData(url: mockURL) {
             case .success(let data):
                 successData = data
             case .failure(let error):
@@ -40,10 +40,10 @@ enum URLSessionClientTests {
         func notHTTPResponse() async {
             let client = TestURLSessionClient(testCase: .notHTTPResponse)
             var successData: Data?
-            var notHTTPResponseError: URLSessionClient.FetchError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var notHTTPResponseError: URLSessionClient.RequestError?
+            var otherFailureError: URLSessionClient.RequestError?
             
-            switch await client.fetchData(url: mockURL) {
+            switch await client.requestData(url: mockURL) {
             case .success(let data):
                 successData = data
             case .failure(let error):
@@ -65,9 +65,9 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
             var successData: Data?
             var requestFailureStatusCode: Int?
-            var otherFailureError: URLSessionClient.FetchError?
+            var otherFailureError: URLSessionClient.RequestError?
             
-            switch await client.fetchData(url: mockURL) {
+            switch await client.requestData(url: mockURL) {
             case .success(let data):
                 successData = data
             case .failure(let error):
@@ -91,9 +91,9 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .urlSessionError(mockError))
             var successData: Data?
             var underlyingURLSessionError: NSError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var otherFailureError: URLSessionClient.RequestError?
             
-            switch await client.fetchData(url: mockURL) {
+            switch await client.requestData(url: mockURL) {
             case .success(let data):
                 successData = data
             case .failure(let error):
@@ -115,10 +115,10 @@ enum URLSessionClientTests {
             let client = URLSessionClient(urlSession: URLSession.shared)
             var successData: Data?
             var urlSessionTaskCancelledError: NSError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var otherFailureError: URLSessionClient.RequestError?
             
             let task = Task {
-                await client.fetchData(url: mockURL)
+                await client.requestData(url: mockURL)
             }
             task.cancel()
             switch await task.value {
@@ -140,7 +140,7 @@ enum URLSessionClientTests {
     }
     
     @Suite
-    struct FetchDataPublisherTests {
+    struct RequestDataPublisherTests {
         
         private var cancellable: AnyCancellable?
         
@@ -148,11 +148,11 @@ enum URLSessionClientTests {
         mutating func success() async {
             let client = TestURLSessionClient(testCase: .success)
             var successData: Data?
-            var failureError: URLSessionClient.FetchError?
+            var failureError: URLSessionClient.RequestError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                cancellable = client.fetchDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
+                cancellable = client.requestDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -178,12 +178,12 @@ enum URLSessionClientTests {
         mutating func notHTTPResponse() async {
             let client = TestURLSessionClient(testCase: .notHTTPResponse)
             var successData: Data?
-            var notHTTPResponseError: URLSessionClient.FetchError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var notHTTPResponseError: URLSessionClient.RequestError?
+            var otherFailureError: URLSessionClient.RequestError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                cancellable = client.fetchDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
+                cancellable = client.requestDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -216,11 +216,11 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
             var successData: Data?
             var requestFailureStatusCode: Int?
-            var otherFailureError: URLSessionClient.FetchError?
+            var otherFailureError: URLSessionClient.RequestError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                cancellable = client.fetchDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
+                cancellable = client.requestDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -255,11 +255,11 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .urlSessionError(mockError))
             var successData: Data?
             var underlyingURLSessionError: NSError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var otherFailureError: URLSessionClient.RequestError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                cancellable = client.fetchDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
+                cancellable = client.requestDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -292,11 +292,11 @@ enum URLSessionClientTests {
             let client = URLSessionClient(urlSession: URLSession.shared)
             var successData: Data?
             var urlSessionTaskCancelledError: NSError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var otherFailureError: URLSessionClient.RequestError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                let resultAfterCancelledHandler: (Result<Data, URLSessionClient.FetchError>) -> Void = {
+                let resultAfterCancelledHandler: (Result<Data, URLSessionClient.RequestError>) -> Void = {
                     switch $0 {
                     case .success(let data):
                         successData = data
@@ -310,7 +310,7 @@ enum URLSessionClientTests {
                     }
                     continuation.resume()
                 }
-                cancellable = client.fetchDataPublisher(url: mockURL, resultAfterCancelledHandler: resultAfterCancelledHandler)
+                cancellable = client.requestDataPublisher(url: mockURL, resultAfterCancelledHandler: resultAfterCancelledHandler)
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -337,12 +337,12 @@ enum URLSessionClientTests {
         mutating func selfBeingReleased() async {
             var client: URLSessionClient? = TestURLSessionClient(testCase: .selfBeingReleased)
             var successData: Data?
-            var selfBeingReleasedError: URLSessionClient.FetchError?
-            var otherFailureError: URLSessionClient.FetchError?
+            var selfBeingReleasedError: URLSessionClient.RequestError?
+            var otherFailureError: URLSessionClient.RequestError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                let publisher = client!.fetchDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
+                let publisher = client!.requestDataPublisher(url: mockURL, resultAfterCancelledHandler: nil)
                 client = nil
                 cancellable = publisher
                     .sink(
