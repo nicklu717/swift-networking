@@ -13,6 +13,7 @@ import Combine
 
 @Suite
 enum URLSessionClientTests {
+    typealias RequestDataError = URLSessionClient.RequestDataError
     
     static let mockURL = URL(string: "https://example.com")!
     
@@ -23,7 +24,7 @@ enum URLSessionClientTests {
         func success() async {
             let client = TestURLSessionClient(testCase: .success)
             var successData: Data?
-            var failureError: URLSessionClient.RequestError?
+            var failureError: RequestDataError?
             
             switch await client.requestData(url: mockURL) {
             case .success(let data):
@@ -40,8 +41,8 @@ enum URLSessionClientTests {
         func notHTTPResponse() async {
             let client = TestURLSessionClient(testCase: .notHTTPResponse)
             var successData: Data?
-            var notHTTPResponseError: URLSessionClient.RequestError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var notHTTPResponseError: RequestDataError?
+            var otherFailureError: RequestDataError?
             
             switch await client.requestData(url: mockURL) {
             case .success(let data):
@@ -65,7 +66,7 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
             var successData: Data?
             var requestFailureStatusCode: Int?
-            var otherFailureError: URLSessionClient.RequestError?
+            var otherFailureError: RequestDataError?
             
             switch await client.requestData(url: mockURL) {
             case .success(let data):
@@ -91,7 +92,7 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .urlSessionError(mockError))
             var successData: Data?
             var underlyingURLSessionError: NSError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var otherFailureError: RequestDataError?
             
             switch await client.requestData(url: mockURL) {
             case .success(let data):
@@ -115,7 +116,7 @@ enum URLSessionClientTests {
             let client = URLSessionClient(urlSession: URLSession.shared)
             var successData: Data?
             var urlSessionTaskCancelledError: NSError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var otherFailureError: RequestDataError?
             
             let task = Task {
                 await client.requestData(url: mockURL)
@@ -148,7 +149,7 @@ enum URLSessionClientTests {
         mutating func success() async {
             let client = TestURLSessionClient(testCase: .success)
             var successData: Data?
-            var failureError: URLSessionClient.RequestError?
+            var failureError: RequestDataError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
@@ -178,8 +179,8 @@ enum URLSessionClientTests {
         mutating func notHTTPResponse() async {
             let client = TestURLSessionClient(testCase: .notHTTPResponse)
             var successData: Data?
-            var notHTTPResponseError: URLSessionClient.RequestError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var notHTTPResponseError: RequestDataError?
+            var otherFailureError: RequestDataError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
@@ -216,7 +217,7 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
             var successData: Data?
             var requestFailureStatusCode: Int?
-            var otherFailureError: URLSessionClient.RequestError?
+            var otherFailureError: RequestDataError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
@@ -255,7 +256,7 @@ enum URLSessionClientTests {
             let client = TestURLSessionClient(testCase: .urlSessionError(mockError))
             var successData: Data?
             var underlyingURLSessionError: NSError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var otherFailureError: RequestDataError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
@@ -292,11 +293,11 @@ enum URLSessionClientTests {
             let client = URLSessionClient(urlSession: URLSession.shared)
             var successData: Data?
             var urlSessionTaskCancelledError: NSError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var otherFailureError: RequestDataError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in
-                let resultAfterCancelledHandler: (Result<Data, URLSessionClient.RequestError>) -> Void = {
+                let resultAfterCancelledHandler: (Result<Data, RequestDataError>) -> Void = {
                     switch $0 {
                     case .success(let data):
                         successData = data
@@ -337,8 +338,8 @@ enum URLSessionClientTests {
         mutating func selfBeingReleased() async {
             var client: URLSessionClient? = TestURLSessionClient(testCase: .selfBeingReleased)
             var successData: Data?
-            var selfBeingReleasedError: URLSessionClient.RequestError?
-            var otherFailureError: URLSessionClient.RequestError?
+            var selfBeingReleasedError: RequestDataError?
+            var otherFailureError: RequestDataError?
             var isFinished = false
             
             await withCheckedContinuation { continuation in

@@ -9,8 +9,8 @@ import Foundation
 import Combine
 
 open class URLSessionClient {
-    public typealias RequestResult = Result<Data, RequestError>
-    public typealias RequestPublisher = AnyPublisher<Data, RequestError>
+    public typealias RequestDataResult = Result<Data, RequestDataError>
+    public typealias RequestDataPublisher = AnyPublisher<Data, RequestDataError>
     
     private let urlSession: URLSessionProtocol
     
@@ -18,7 +18,7 @@ open class URLSessionClient {
         self.urlSession = urlSession
     }
     
-    open func requestData(request: URLRequest) async -> RequestResult {
+    open func requestData(request: URLRequest) async -> RequestDataResult {
         do {
             let (data, response) = try await urlSession.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -37,13 +37,13 @@ open class URLSessionClient {
     
     open func requestDataPublisher(
         request: URLRequest,
-        resultAfterCancelledHandler: ((RequestResult) -> Void)? = nil
-    ) -> RequestPublisher {
+        resultAfterCancelledHandler: ((RequestDataResult) -> Void)? = nil
+    ) -> RequestDataPublisher {
         var underlyingTask: Task<Void, Never>?
         return Deferred { [weak self] in
             Future { promise in
                 underlyingTask = Task {
-                    let result: RequestResult = await {
+                    let result: RequestDataResult = await {
                         guard let self = self else { return .failure(.selfBeingReleased) }
                         return await self.requestData(request: request)
                     }()
@@ -63,21 +63,21 @@ open class URLSessionClient {
         .eraseToAnyPublisher()
     }
     
-    public func requestData(url: URL) async -> RequestResult {
+    public func requestData(url: URL) async -> RequestDataResult {
         return await requestData(request: URLRequest(url: url))
     }
     
     public func requestDataPublisher(
         url: URL,
-        resultAfterCancelledHandler: ((RequestResult) -> Void)?
-    ) -> RequestPublisher {
+        resultAfterCancelledHandler: ((RequestDataResult) -> Void)?
+    ) -> RequestDataPublisher {
         return requestDataPublisher(request: URLRequest(url: url), resultAfterCancelledHandler: resultAfterCancelledHandler)
     }
 }
 
 // MARK: - Request Error
 extension URLSessionClient {
-    public enum RequestError: Error {
+    public enum RequestDataError: Error {
         case notHTTPResponse(URLResponse)
         case requestFailure(statusCode: Int, Data)
         case urlSessionError(Error)

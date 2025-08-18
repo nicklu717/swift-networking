@@ -13,10 +13,11 @@ import Combine
 
 @Suite
 struct HTTPProviderProtocolTests {
+    typealias RequestObjectError = TestAPIProvider.RequestObjectError
     
     @Suite
     struct RequestObjectTests {
-        typealias RequestResult = TestAPIProvider.RequestResult<TestObject>
+        typealias RequestTestObjectResult = TestAPIProvider.RequestObjectResult<TestObject>
         
         let mockID = 1
         let mockName = "Test"
@@ -26,9 +27,9 @@ struct HTTPProviderProtocolTests {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
             let provider = TestAPIProvider(testCase: .success(data))
             var successObject: TestObject?
-            var failureError: HTTPProviderRequestError?
+            var failureError: RequestObjectError?
             
-            let result: RequestResult = await provider.requestObject(for: .plain())
+            let result: RequestTestObjectResult = await provider.requestObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -44,10 +45,10 @@ struct HTTPProviderProtocolTests {
         func urlSessionClientError() async throws {
             let provider = TestAPIProvider(testCase: .urlSessionClientError)
             var successObject: TestObject?
-            var urlSessionClientError: HTTPProviderRequestError?
-            var otherFailureError: HTTPProviderRequestError?
+            var urlSessionClientError: RequestObjectError?
+            var otherFailureError: RequestObjectError?
             
-            let result: RequestResult = await provider.requestObject(for: .plain())
+            let result: RequestTestObjectResult = await provider.requestObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -69,10 +70,10 @@ struct HTTPProviderProtocolTests {
         func makeRequestError() async throws {
             let provider = TestAPIProvider(testCase: .makeRequestError)
             var successObject: TestObject?
-            var makeRequestError: HTTPProviderRequestError?
-            var otherFailureError: HTTPProviderRequestError?
+            var makeRequestError: RequestObjectError?
+            var otherFailureError: RequestObjectError?
             
-            let result: RequestResult = await provider.requestObject(for: .invalidURL())
+            let result: RequestTestObjectResult = await provider.requestObject(for: .invalidURL())
             switch result {
             case .success(let object):
                 successObject = object
@@ -94,10 +95,10 @@ struct HTTPProviderProtocolTests {
         func jsonDecodingFailure() async throws {
             let provider = TestAPIProvider(testCase: .jsonDecodingFailure(Data()))
             var successObject: TestObject?
-            var jsonDecodingFailureError: HTTPProviderRequestError?
-            var otherFailureError: HTTPProviderRequestError?
+            var jsonDecodingFailureError: RequestObjectError?
+            var otherFailureError: RequestObjectError?
             
-            let result: RequestResult = await provider.requestObject(for: .plain())
+            let result: RequestTestObjectResult = await provider.requestObject(for: .plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -130,7 +131,7 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .success(data))
             var successObject: TestObject?
             var isFinished = false
-            var failureError: HTTPProviderRequestError?
+            var failureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
                 provider.requestObjectPublisher(for: .plain())
@@ -161,8 +162,8 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .urlSessionClientError)
             var successObject: TestObject?
             var isFinished = false
-            var urlSessionClientError: HTTPProviderRequestError?
-            var otherFailureError: HTTPProviderRequestError?
+            var urlSessionClientError: RequestObjectError?
+            var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
                 provider.requestObjectPublisher(for: .plain())
@@ -199,8 +200,8 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .makeRequestError)
             var successObject: TestObject?
             var isFinished = false
-            var makeRequestError: HTTPProviderRequestError?
-            var otherFailureError: HTTPProviderRequestError?
+            var makeRequestError: RequestObjectError?
+            var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
                 provider.requestObjectPublisher(for: .invalidURL())
@@ -237,8 +238,8 @@ struct HTTPProviderProtocolTests {
             let provider = TestAPIProvider(testCase: .jsonDecodingFailure(Data()))
             var successObject: TestObject?
             var isFinished = false
-            var jsonDecodingFailure: HTTPProviderRequestError?
-            var otherFailureError: HTTPProviderRequestError?
+            var jsonDecodingFailure: RequestObjectError?
+            var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
                 provider.requestObjectPublisher(for: .plain())
@@ -290,9 +291,9 @@ extension HTTPProviderProtocolTests {
         init(testCase: TestCase) {
             switch testCase {
             case .success(let data), .jsonDecodingFailure(let data):
-                self.client = MockURLSessionClient(mockRequestResult: .success(data))
+                self.client = MockURLSessionClient(mockResult: .success(data))
             case .urlSessionClientError:
-                self.client = MockURLSessionClient(mockRequestResult: .failure(.selfBeingReleased))
+                self.client = MockURLSessionClient(mockResult: .failure(.selfBeingReleased))
             case .makeRequestError:
                 self.client = DummyURLSessionClient()
             }
@@ -300,22 +301,22 @@ extension HTTPProviderProtocolTests {
         }
         
         class MockURLSessionClient: URLSessionClient {
-            let mockRequestResult: RequestResult
+            let mockResult: RequestDataResult
             
-            init(mockRequestResult: RequestResult) {
-                self.mockRequestResult = mockRequestResult
+            init(mockResult: RequestDataResult) {
+                self.mockResult = mockResult
                 super.init(urlSession: DummyURLSession())
             }
             
-            override func requestData(request: URLRequest) async -> RequestResult {
-                return mockRequestResult
+            override func requestData(request: URLRequest) async -> RequestDataResult {
+                return mockResult
             }
             
             override func requestDataPublisher(
                 request: URLRequest,
-                resultAfterCancelledHandler: ((RequestResult) -> Void)?
-            ) -> RequestPublisher {
-                return mockRequestResult.publisher.eraseToAnyPublisher()
+                resultAfterCancelledHandler: ((RequestDataResult) -> Void)?
+            ) -> RequestDataPublisher {
+                return mockResult.publisher.eraseToAnyPublisher()
             }
             
             class DummyURLSession: URLSessionProtocol {
