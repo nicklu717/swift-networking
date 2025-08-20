@@ -12,6 +12,7 @@ public enum HTTPProviderRequestObjectError: Error {
     case urlSessionClientError(URLSessionClient.RequestDataError)
     case makeRequestError(HTTPEndpoint.MakeRequestError)
     case jsonDecodingFailure(Error)
+    case custom(String, Error?)
 }
 
 public protocol HTTPProviderProtocol {

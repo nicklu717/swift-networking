@@ -11,6 +11,7 @@ import Combine
 open class URLSessionClient {
     public typealias RequestDataResult = Result<Data, RequestDataError>
     public typealias RequestDataPublisher = AnyPublisher<Data, RequestDataError>
+    public typealias StatusCode = Int
     
     private let urlSession: URLSessionProtocol
     
@@ -28,7 +29,7 @@ open class URLSessionClient {
             case 200..<300:
                 return .success(data)
             default:
-                return .failure(.requestFailure(statusCode: httpResponse.statusCode, data))
+                return .failure(.requestFailure(httpResponse.statusCode, data))
             }
         } catch {
             return .failure(.urlSessionError(error))
@@ -79,8 +80,9 @@ open class URLSessionClient {
 extension URLSessionClient {
     public enum RequestDataError: Error {
         case notHTTPResponse(URLResponse)
-        case requestFailure(statusCode: Int, Data)
+        case requestFailure(StatusCode, Data)
         case urlSessionError(Error)
         case selfBeingReleased
+        case custom(String, Error?)
     }
 }
