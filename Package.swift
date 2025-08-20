@@ -15,8 +15,8 @@ enum PackageModule {
                     dependencies: [
                         .external(.swiftHTTPType)
                     ],
-                    hasTests: true,
-                    hasResources: false
+                    hasResources: false,
+                    testsOption: .enabled(hasResourses: false)
                 )
             }
         }
@@ -48,20 +48,25 @@ extension PackageModule.Internal {
             case library, executable
         }
         
+        enum TestsOption {
+            case enabled(hasResourses: Bool)
+            case disabled
+        }
+        
         let name: String
         let dependencies: [PackageModule]
         let path: String
         let productType: ProductType
-        let hasTests: Bool
         let hasResources: Bool
+        let testsOption: TestsOption
         
-        init(name: String, dependencies: [PackageModule], intermediateDirectoryPath: String = "", productType: ProductType = .library, hasTests: Bool, hasResources: Bool) {
+        init(name: String, dependencies: [PackageModule], intermediateDirectoryPath: String = "", productType: ProductType = .library, hasResources: Bool, testsOption: TestsOption) {
             self.name = name
             self.dependencies = dependencies
             self.path = "\(intermediateDirectoryPath)\(name)/"
             self.productType = productType
-            self.hasTests = hasTests
             self.hasResources = hasResources
+            self.testsOption = testsOption
         }
     }
 }
@@ -118,9 +123,16 @@ extension PackageModule.Internal.Module {
     }
     
     var testTarget: Target? {
-        if hasTests {
-            return .testTarget(name: "\(name)Tests", dependencies: [.byName(name: name)], path: "Tests/\(path)")
-        } else {
+        switch testsOption {
+        case .enabled(let hasResourses):
+            let path = "Tests/\(path)"
+            return .testTarget(
+                name: "\(name)Tests",
+                dependencies: [.byName(name: name)],
+                path: path,
+                resources: hasResourses ? [.process("\(path)/Resources")] : nil
+            )
+        case .disabled:
             return nil
         }
     }
