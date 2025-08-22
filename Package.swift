@@ -44,7 +44,7 @@ enum PackageModule {
                     packageInfo: .init(
                         name: "swift-utilities",
                         url: "https://github.com/nicklu717/swift-utilities.git",
-                        version: .branch("main")
+                        version: .tag("1.0.0")
                     )
                 )
             }

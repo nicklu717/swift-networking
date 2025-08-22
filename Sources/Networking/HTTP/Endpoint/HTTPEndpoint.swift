@@ -47,6 +47,12 @@ open class HTTPEndpoint {
                         return .failure(.jsonEncodingFailure(error))
                     }
                 }
+            case .dictionary(let dictionary):
+                do {
+                    request.httpBody = try JSONEncoder().encode(dictionary)
+                } catch {
+                    return .failure(.jsonEncodingFailure(error))
+                }
             }
         }
         return .success(request)

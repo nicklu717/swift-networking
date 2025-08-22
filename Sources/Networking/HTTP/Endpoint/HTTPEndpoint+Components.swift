@@ -7,6 +7,7 @@
 
 import Foundation
 import HTTPTypes
+import Utilities
 
 extension HTTPEndpoint {
     
@@ -29,6 +30,7 @@ extension HTTPEndpoint {
     public enum HTTPParameter {
         case url(queries: [String: String])
         case body(BodyType)
+        case dictionary([String: AnyEncodable])
         
         public enum BodyType {
             case data(Data)

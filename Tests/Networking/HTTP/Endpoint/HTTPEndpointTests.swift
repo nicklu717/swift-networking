@@ -23,7 +23,8 @@ struct HTTPEndpointTests {
                 .plainWithHeaderValue(accessToken: "mock_access_token"),
                 .url(queries: ["product_id": "12345"]),
                 .body(data: "mock_data".data(using: .utf8)!),
-                .body(encodable: ["product_id": "12345"])
+                .body(encodable: ["product_id": "12345"]),
+                .body(dictionary: ["product_id": .string("12345")]),
             ]
             try endpoints.forEach { endpoint in
                 var successRequest: URLRequest?
@@ -62,6 +63,9 @@ struct HTTPEndpointTests {
                             let data = try #require(try JSONEncoder().encode(encodable))
                             #expect(request.httpBody == data)
                         }
+                    case .dictionary(let dictionary):
+                        let data = try #require(try JSONEncoder().encode(dictionary))
+                        #expect(request.httpBody == data)
                     }
                 }
                 #expect(failureError == nil)

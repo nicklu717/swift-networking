@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Utilities
 
 @testable import Networking
 
@@ -89,6 +90,15 @@ class TestAPIEndpoint: HTTPEndpoint {
             method: .post,
             headers: [],
             parameter: .body(.json(encodable))
+        )
+    }
+    
+    static func body(dictionary: [String: AnyEncodable]) -> TestAPIEndpoint {
+        TestAPIEndpoint(
+            path: "/bodyWithDictionary",
+            method: .post,
+            headers: [],
+            parameter: .dictionary(dictionary)
         )
     }
     
