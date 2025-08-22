@@ -10,12 +10,13 @@ enum PackageModule {
         var module: Module {
             switch self {
             case .networking:
-                return Module(
+                Module(
                     name: "Networking",
                     dependencies: [
-                        .external(.swiftHTTPType)
+                        .external(.swiftHTTPType),
+                        .external(.utilities)
                     ],
-                    hasResources: false,
+                    productType: .library(hasResources: false),
                     testsOption: .enabled(hasResourses: false)
                 )
             }
@@ -24,16 +25,26 @@ enum PackageModule {
     
     enum External: CaseIterable {
         case swiftHTTPType
+        case utilities
         
         var module: Module {
             switch self {
             case .swiftHTTPType:
-                return Module(
+                Module(
                     name: "HTTPTypes",
                     packageInfo: .init(
                         name: "swift-http-types",
                         url: "https://github.com/apple/swift-http-types.git",
-                        tag: "1.4.0"
+                        version: .tag("1.4.0")
+                    )
+                )
+            case .utilities:
+                Module(
+                    name: "Utilities",
+                    packageInfo: .init(
+                        name: "swift-utilities",
+                        url: "https://github.com/nicklu717/swift-utilities.git",
+                        version: .branch("main")
                     )
                 )
             }
@@ -45,7 +56,8 @@ enum PackageModule {
 extension PackageModule.Internal {
     class Module {
         enum ProductType {
-            case library, executable
+            case library(hasResources: Bool)
+            case executable
         }
         
         enum TestsOption {
@@ -57,15 +69,13 @@ extension PackageModule.Internal {
         let dependencies: [PackageModule]
         let path: String
         let productType: ProductType
-        let hasResources: Bool
         let testsOption: TestsOption
         
-        init(name: String, dependencies: [PackageModule], intermediateDirectoryPath: String = "", productType: ProductType = .library, hasResources: Bool, testsOption: TestsOption) {
+        init(name: String, dependencies: [PackageModule], intermediateDirectoryPath: String = "", productType: ProductType, testsOption: TestsOption) {
             self.name = name
             self.dependencies = dependencies
             self.path = "\(intermediateDirectoryPath)\(name)/"
             self.productType = productType
-            self.hasResources = hasResources
             self.testsOption = testsOption
         }
     }
@@ -76,7 +86,12 @@ extension PackageModule.External {
         struct PackageInfo {
             let name: String
             let url: String
-            let tag: String
+            let version: Version
+            
+            enum Version {
+                case tag(String)
+                case branch(String)
+            }
         }
         
         let name: String
@@ -112,25 +127,23 @@ extension PackageModule.Internal.Module {
             }
         }
         let path = "Sources/\(path)"
-        let resources: [Resource]? = hasResources ? [.process("Resources")] : nil
-        
         switch productType {
-        case .library:
+        case .library(let hasResources):
+            let resources: [Resource]? = hasResources ? [.process("Resources")] : nil
             return .target(name: name, dependencies: dependencies, path: path, resources: resources)
         case .executable:
-            return .executableTarget(name: name, dependencies: dependencies, path: path, resources: resources)
+            return .executableTarget(name: name, dependencies: dependencies, path: path)
         }
     }
     
     var testTarget: Target? {
         switch testsOption {
         case .enabled(let hasResourses):
-            let path = "Tests/\(path)"
             return .testTarget(
                 name: "\(name)Tests",
                 dependencies: [.byName(name: name)],
-                path: path,
-                resources: hasResourses ? [.process("\(path)/Resources")] : nil
+                path: "Tests/\(path)",
+                resources: hasResourses ? [.process("Resources")] : nil
             )
         case .disabled:
             return nil
@@ -140,7 +153,12 @@ extension PackageModule.Internal.Module {
 
 extension PackageModule.External.Module {
     var package: Package.Dependency {
-        .package(url: packageInfo.url, exact: Version(stringLiteral: packageInfo.tag))
+        switch packageInfo.version {
+        case .tag(let tag):
+            return .package(url: packageInfo.url, exact: Version(stringLiteral: tag))
+        case .branch(let branch):
+            return .package(url: packageInfo.url, branch: branch)
+        }
     }
     
     var product: Target.Dependency {

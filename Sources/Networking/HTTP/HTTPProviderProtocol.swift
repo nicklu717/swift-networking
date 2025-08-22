@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import Utilities
 
 public enum HTTPProviderRequestObjectError: Error {
     case urlSessionClientError(URLSessionClient.RequestDataError)
@@ -27,6 +28,8 @@ public protocol HTTPProviderProtocol {
     
     func requestObject<T: Decodable>(for endpoint: Endpoint) async -> RequestObjectResult<T>
     func requestObjectPublisher<T: Decodable>(for endpoint: Endpoint) -> RequestObjectPublisher<T>
+    func requestData(for endpoint: Endpoint) async -> RequestObjectResult<Data>
+    func requestDataPublisher(for endpoint: Endpoint) -> RequestObjectPublisher<Data>
 }
 
 public extension HTTPProviderProtocol {
@@ -35,7 +38,7 @@ public extension HTTPProviderProtocol {
         return await requestData(for: endpoint).flatMap { decode(data: $0) }
     }
     
-    private func requestData(for endpoint: Endpoint) async -> RequestObjectResult<Data> {
+    func requestData(for endpoint: Endpoint) async -> RequestObjectResult<Data> {
         return await makeRequest(for: endpoint)
             .asyncFlatMap {
                 await client.requestData(request: $0)
@@ -50,7 +53,7 @@ public extension HTTPProviderProtocol {
             .eraseToAnyPublisher()
     }
     
-    private func requestDataPublisher(for endpoint: Endpoint) -> RequestObjectPublisher<Data> {
+    func requestDataPublisher(for endpoint: Endpoint) -> RequestObjectPublisher<Data> {
         return makeRequest(for: endpoint).publisher
             .flatMap {
                 client.requestDataPublisher(request: $0, resultAfterCancelledHandler: nil)
