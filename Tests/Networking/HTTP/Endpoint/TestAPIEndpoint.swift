@@ -93,7 +93,7 @@ class TestAPIEndpoint: HTTPEndpoint {
         )
     }
     
-    static func body(dictionary: [String: AnyEncodable]) -> TestAPIEndpoint {
+    static func body(dictionary: [String: Any]) -> TestAPIEndpoint {
         TestAPIEndpoint(
             path: "/bodyWithDictionary",
             method: .post,

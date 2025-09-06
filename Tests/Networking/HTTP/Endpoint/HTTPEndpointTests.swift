@@ -24,7 +24,7 @@ struct HTTPEndpointTests {
                 .url(queries: ["product_id": "12345"]),
                 .body(data: "mock_data".data(using: .utf8)!),
                 .body(encodable: ["product_id": "12345"]),
-                .body(dictionary: ["product_id": .string("12345")]),
+                .body(dictionary: ["product_id": "12345"]),
             ]
             try endpoints.forEach { endpoint in
                 var successRequest: URLRequest?
@@ -64,7 +64,7 @@ struct HTTPEndpointTests {
                             #expect(request.httpBody == data)
                         }
                     case .dictionary(let dictionary):
-                        let data = try #require(try JSONEncoder().encode(dictionary))
+                        let data = try #require(try JSONSerialization.data(withJSONObject: dictionary))
                         #expect(request.httpBody == data)
                     }
                 }

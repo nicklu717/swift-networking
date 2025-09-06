@@ -30,7 +30,7 @@ extension HTTPEndpoint {
     public enum HTTPParameter {
         case url(queries: [String: String])
         case body(BodyType)
-        case dictionary([String: AnyEncodable])
+        case dictionary([String: Any])
         
         public enum BodyType {
             case data(Data)

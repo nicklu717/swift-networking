@@ -49,7 +49,7 @@ open class HTTPEndpoint {
                 }
             case .dictionary(let dictionary):
                 do {
-                    request.httpBody = try JSONEncoder().encode(dictionary)
+                    request.httpBody = try JSONSerialization.data(withJSONObject: dictionary)
                 } catch {
                     return .failure(.jsonEncodingFailure(error))
                 }
