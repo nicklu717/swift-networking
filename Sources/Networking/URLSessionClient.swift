@@ -45,7 +45,7 @@ open class URLSessionClient {
             Future { promise in
                 underlyingTask = Task {
                     let result: RequestDataResult = await {
-                        guard let self = self else { return .failure(.selfBeingReleased) }
+                        guard let self = self else { return .failure(.selfNotExist) }
                         return await self.requestData(request: request)
                     }()
                     if Task.isCancelled {
@@ -82,7 +82,7 @@ extension URLSessionClient {
         case notHTTPResponse(URLResponse)
         case requestFailure(StatusCode, Data)
         case urlSessionError(Error)
-        case selfBeingReleased
+        case selfNotExist
         case custom(String, Error?)
     }
 }

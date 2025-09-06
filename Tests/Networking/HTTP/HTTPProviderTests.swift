@@ -1,5 +1,5 @@
 //
-//  HTTPProviderProtocolTests.swift
+//  HTTPProviderTests.swift
 //  Networking
 //
 //  Created by 陸瑋恩 on 2025/7/17.
@@ -12,7 +12,7 @@ import Combine
 @testable import Networking
 
 @Suite
-struct HTTPProviderProtocolTests {
+struct HTTPProviderTests {
     typealias RequestObjectError = TestAPIProvider.RequestObjectError
     
     @Suite
@@ -23,7 +23,7 @@ struct HTTPProviderProtocolTests {
         let mockName = "Test"
         
         @Test
-        func success() async throws {
+        func success() async {
             let data = "{\"id\": \(mockID), \"name\": \"\(mockName)\"}".data(using: .utf8)!
             let provider = TestAPIProvider(testCase: .success(data))
             var successObject: TestObject?
@@ -42,7 +42,7 @@ struct HTTPProviderProtocolTests {
         }
         
         @Test
-        func urlSessionClientError() async throws {
+        func urlSessionClientError() async {
             let provider = TestAPIProvider(testCase: .urlSessionClientError)
             var successObject: TestObject?
             var urlSessionClientError: RequestObjectError?
@@ -67,7 +67,7 @@ struct HTTPProviderProtocolTests {
         }
         
         @Test
-        func makeRequestError() async throws {
+        func makeRequestError() async {
             let provider = TestAPIProvider(testCase: .makeRequestError)
             var successObject: TestObject?
             var makeRequestError: RequestObjectError?
@@ -92,7 +92,7 @@ struct HTTPProviderProtocolTests {
         }
         
         @Test
-        func jsonDecodingFailure() async throws {
+        func jsonDecodingFailure() async {
             let provider = TestAPIProvider(testCase: .jsonDecodingFailure(Data()))
             var successObject: TestObject?
             var jsonDecodingFailureError: RequestObjectError?
@@ -158,7 +158,7 @@ struct HTTPProviderProtocolTests {
         }
         
         @Test
-        mutating func urlSessionClientError() async throws {
+        mutating func urlSessionClientError() async {
             let provider = TestAPIProvider(testCase: .urlSessionClientError)
             var successObject: TestObject?
             var isFinished = false
@@ -196,7 +196,7 @@ struct HTTPProviderProtocolTests {
         }
         
         @Test
-        mutating func makeRequestError() async throws {
+        mutating func makeRequestError() async {
             let provider = TestAPIProvider(testCase: .makeRequestError)
             var successObject: TestObject?
             var isFinished = false
@@ -234,7 +234,7 @@ struct HTTPProviderProtocolTests {
         }
         
         @Test
-        mutating func jsonDecodingFailure() async throws {
+        mutating func jsonDecodingFailure() async {
             let provider = TestAPIProvider(testCase: .jsonDecodingFailure(Data()))
             var successObject: TestObject?
             var isFinished = false
@@ -270,17 +270,52 @@ struct HTTPProviderProtocolTests {
             #expect(jsonDecodingFailure != nil)
             #expect(otherFailureError == nil)
         }
+        
+        @Test
+        mutating func selfNotExist() async {
+            var provider: TestAPIProvider? = TestAPIProvider(testCase: .success(Data()))
+            var successObject: TestObject?
+            var isFinished = false
+            var selfNotExistError: RequestObjectError?
+            var otherFailureError: RequestObjectError?
+            
+            await withCheckedContinuation { continuation in
+                let publisher: TestAPIProvider.RequestObjectPublisher<TestObject> = provider!.requestObjectPublisher(for: .plain())
+                provider = nil
+                publisher
+                    .sink(
+                        receiveCompletion: {
+                            switch $0 {
+                            case .finished:
+                                isFinished = true
+                            case .failure(let error):
+                                switch error {
+                                case .selfNotExist:
+                                    selfNotExistError = error
+                                default:
+                                    otherFailureError = error
+                                }
+                            }
+                            continuation.resume()
+                        },
+                        receiveValue: { object in
+                            successObject = object
+                        }
+                    )
+                    .store(in: &cancellables)
+            }
+            
+            #expect(successObject == nil)
+            #expect(!isFinished)
+            #expect(selfNotExistError != nil)
+            #expect(otherFailureError == nil)
+        }
     }
 }
 
-extension HTTPProviderProtocolTests {
+extension HTTPProviderTests {
     
-    class TestAPIProvider: HTTPProviderProtocol {
-        typealias Endpoint = TestAPIEndpoint
-        
-        let client: URLSessionClient
-        let jsonDecoder: JSONDecoder
-        
+    class TestAPIProvider: HTTPProvider<TestAPIEndpoint> {
         enum TestCase {
             case success(Data)
             case urlSessionClientError
@@ -289,15 +324,24 @@ extension HTTPProviderProtocolTests {
         }
         
         init(testCase: TestCase) {
+            let jsonDecoder = JSONDecoder()
             switch testCase {
             case .success(let data), .jsonDecodingFailure(let data):
-                self.client = MockURLSessionClient(mockResult: .success(data))
+                super.init(
+                    client: MockURLSessionClient(mockResult: .success(data)),
+                    jsonDecoder: jsonDecoder
+                )
             case .urlSessionClientError:
-                self.client = MockURLSessionClient(mockResult: .failure(.selfBeingReleased))
+                super.init(
+                    client: MockURLSessionClient(mockResult: .failure(.selfNotExist)),
+                    jsonDecoder: jsonDecoder
+                )
             case .makeRequestError:
-                self.client = DummyURLSessionClient()
+                super.init(
+                    client: DummyURLSessionClient(),
+                    jsonDecoder: jsonDecoder
+                )
             }
-            self.jsonDecoder = JSONDecoder()
         }
         
         class MockURLSessionClient: URLSessionClient {

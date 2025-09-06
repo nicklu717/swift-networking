@@ -335,8 +335,8 @@ enum URLSessionClientTests {
         }
         
         @Test
-        mutating func selfBeingReleased() async {
-            var client: URLSessionClient? = TestURLSessionClient(testCase: .selfBeingReleased)
+        mutating func selfNotExist() async {
+            var client: URLSessionClient? = TestURLSessionClient(testCase: .selfNotExist)
             var successData: Data?
             var selfBeingReleasedError: RequestDataError?
             var otherFailureError: RequestDataError?
@@ -353,7 +353,7 @@ enum URLSessionClientTests {
                                 isFinished = true
                             case .failure(let error):
                                 switch error {
-                                case .selfBeingReleased:
+                                case .selfNotExist:
                                     selfBeingReleasedError = error
                                 default:
                                     otherFailureError = error
@@ -389,7 +389,7 @@ extension URLSessionClientTests {
                 case notHTTPResponse
                 case requestFailure(Int)
                 case urlSessionError(Error)
-                case selfBeingReleased
+                case selfNotExist
             }
             private let testCase: TestCase
             
@@ -399,7 +399,7 @@ extension URLSessionClientTests {
             
             func data(for request: URLRequest) async throws -> (Data, URLResponse) {
                 switch testCase {
-                case .success, .selfBeingReleased:
+                case .success, .selfNotExist:
                     return (Data(), makeHTTPURLResponse(request: request, statusCode: 200))
                 case .notHTTPResponse:
                     return (Data(), URLResponse())
