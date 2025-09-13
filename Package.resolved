@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nicklu717/swift-utilities.git",
       "state" : {
-        "revision" : "b9c21b690f7f141b0bc95eb3cd54c1dd3638dcd9",
-        "version" : "1.0.0"
+        "revision" : "0a2f4c84e8ec36199418bd3e5967b473636526c4",
+        "version" : "1.1.1"
       }
     }
   ],

@@ -35,7 +35,7 @@ enum PackageModule {
                     packageInfo: .init(
                         name: "swift-http-types",
                         url: "https://github.com/apple/swift-http-types.git",
-                        version: .tag("1.4.0")
+                        version: .tag(.from("1.4.0"))
                     )
                 )
             case .utilities:
@@ -44,7 +44,7 @@ enum PackageModule {
                     packageInfo: .init(
                         name: "swift-utilities",
                         url: "https://github.com/nicklu717/swift-utilities.git",
-                        version: .tag("1.0.0")
+                        version: .tag(.from("1.1.1"))
                     )
                 )
             }
@@ -89,8 +89,13 @@ extension PackageModule.External {
             let version: Version
             
             enum Version {
-                case tag(String)
+                case tag(Tag)
                 case branch(String)
+                
+                enum Tag {
+                    case from(String)
+                    case exact(String)
+                }
             }
         }
         
@@ -155,7 +160,12 @@ extension PackageModule.External.Module {
     var package: Package.Dependency {
         switch packageInfo.version {
         case .tag(let tag):
-            return .package(url: packageInfo.url, exact: Version(stringLiteral: tag))
+            switch tag {
+            case .from(let version):
+                return .package(url: packageInfo.url, from: Version(stringLiteral: version))
+            case .exact(let version):
+                return .package(url: packageInfo.url, exact: Version(stringLiteral: version))
+            }
         case .branch(let branch):
             return .package(url: packageInfo.url, branch: branch)
         }
