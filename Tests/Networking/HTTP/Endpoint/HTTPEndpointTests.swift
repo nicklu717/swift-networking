@@ -44,7 +44,7 @@ struct HTTPEndpointTests {
                     guard !queries.isEmpty else { return }
                     queryString = "?\(queries.map { "\($0)=\($1)" }.joined(separator: "&"))"
                 }
-                #expect(request.url?.absoluteString == endpoint.domain() + endpoint.path + queryString)
+                #expect(request.url?.absoluteString == endpoint.domain + endpoint.path + queryString)
                 #expect(request.httpMethod == endpoint.method.rawValue)
                 #expect(request.allHTTPHeaderFields?.count == endpoint.headers.count)
                 endpoint.headers.forEach {

@@ -37,7 +37,7 @@ class TestAPIEndpoint: HTTPEndpoint {
         parameter: HTTPParameter?
     ) {
         super.init(
-            domain: { TestAppSettings.shared.testAPIDomain },
+            domain: TestAppSettings.shared.testAPIDomain,
             path: path,
             method: method,
             headers: headers,

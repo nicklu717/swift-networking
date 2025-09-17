@@ -8,13 +8,13 @@
 import Foundation
 
 open class HTTPEndpoint {
-    let domain: () -> String
+    let domain: String
     let path: String
     let method: HTTPMethod
     let headers: [HTTPHeader]
     let parameter: HTTPParameter?
     
-    public init(domain: @escaping () -> String, path: String, method: HTTPMethod, headers: [HTTPHeader], parameter: HTTPParameter?) {
+    public init(domain: String, path: String, method: HTTPMethod, headers: [HTTPHeader], parameter: HTTPParameter?) {
         self.domain = domain
         self.path = path
         self.method = method
@@ -23,7 +23,7 @@ open class HTTPEndpoint {
     }
     
     open func makeRequest() -> Result<URLRequest, MakeRequestError> {
-        let urlString = domain() + path
+        let urlString = domain + path
         guard let url = URL(string: urlString) else { return .failure(.invalidURL(urlString)) }
         
         var request = URLRequest(url: url)
