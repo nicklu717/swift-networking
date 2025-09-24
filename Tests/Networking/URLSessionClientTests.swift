@@ -61,11 +61,15 @@ enum URLSessionClientTests {
             #expect(otherFailureError == nil)
         }
         
-        @Test(arguments: [300, 400, 500, 600, 900])
-        func requestFailure(statusCode: Int) async throws {
+        @Test(arguments: [
+            (400, TestURLSessionClient.HTTPResponseStatus.Kind.clientError),
+            (500, TestURLSessionClient.HTTPResponseStatus.Kind.serverError),
+            (900, TestURLSessionClient.HTTPResponseStatus.Kind.invalid)
+        ])
+        func requestFailure(statusCode: Int, expectedStatusKind: TestURLSessionClient.HTTPResponseStatus.Kind) async throws {
             let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
             var successData: Data?
-            var requestFailureStatusCode: Int?
+            var requestFailureStatus: TestURLSessionClient.HTTPResponseStatus?
             var otherFailureError: RequestDataError?
             
             switch await client.requestData(url: mockURL) {
@@ -73,15 +77,15 @@ enum URLSessionClientTests {
                 successData = data
             case .failure(let error):
                 switch error {
-                case .requestFailure(let statusCode, _):
-                    requestFailureStatusCode = statusCode
+                case .requestFailure(let status, _):
+                    requestFailureStatus = status
                 default:
                     otherFailureError = error
                 }
             }
             
             #expect(successData == nil)
-            #expect(try #require(requestFailureStatusCode) == statusCode)
+            #expect(try #require(requestFailureStatus).kind == expectedStatusKind)
             #expect(otherFailureError == nil)
         }
         
@@ -99,7 +103,7 @@ enum URLSessionClientTests {
                 successData = data
             case .failure(let error):
                 switch error {
-                case .urlSessionError(let error):
+                case .unexpectedURLSessionError(let error):
                     underlyingURLSessionError = error as NSError
                 default:
                     otherFailureError = error
@@ -115,7 +119,7 @@ enum URLSessionClientTests {
         func urlSessionTaskCancelled() async throws {
             let client = URLSessionClient(urlSession: URLSession.shared)
             var successData: Data?
-            var urlSessionTaskCancelledError: NSError?
+            var urlSessionTaskCancelledError: URLError?
             var otherFailureError: RequestDataError?
             
             let task = Task {
@@ -128,14 +132,14 @@ enum URLSessionClientTests {
             case .failure(let error):
                 switch error {
                 case .urlSessionError(let error):
-                    urlSessionTaskCancelledError = error as NSError
+                    urlSessionTaskCancelledError = error
                 default:
                     otherFailureError = error
                 }
             }
             
             #expect(successData == nil)
-            #expect(try #require(urlSessionTaskCancelledError).code == -999)
+            #expect(try #require(urlSessionTaskCancelledError).code == .cancelled)
             #expect(otherFailureError == nil)
         }
     }
@@ -212,11 +216,15 @@ enum URLSessionClientTests {
             #expect(!isFinished)
         }
         
-        @Test(arguments: [300, 400, 500, 600, 900])
-        mutating func requestFailure(statusCode: Int) async throws {
+        @Test(arguments: [
+            (400, TestURLSessionClient.HTTPResponseStatus.Kind.clientError),
+            (500, TestURLSessionClient.HTTPResponseStatus.Kind.serverError),
+            (900, TestURLSessionClient.HTTPResponseStatus.Kind.invalid)
+        ])
+        mutating func requestFailure(statusCode: Int, expectedStatusKind: TestURLSessionClient.HTTPResponseStatus.Kind) async throws {
             let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
             var successData: Data?
-            var requestFailureStatusCode: Int?
+            var requestFailureStatus: TestURLSessionClient.HTTPResponseStatus?
             var otherFailureError: RequestDataError?
             var isFinished = false
             
@@ -229,8 +237,8 @@ enum URLSessionClientTests {
                                 isFinished = true
                             case .failure(let error):
                                 switch error {
-                                case .requestFailure(let statusCode, _):
-                                    requestFailureStatusCode = statusCode
+                                case .requestFailure(let status, _):
+                                    requestFailureStatus = status
                                 default:
                                     otherFailureError = error
                                 }
@@ -244,7 +252,7 @@ enum URLSessionClientTests {
             }
             
             #expect(successData == nil)
-            #expect(try #require(requestFailureStatusCode) == statusCode)
+            #expect(try #require(requestFailureStatus).kind == expectedStatusKind)
             #expect(otherFailureError == nil)
             #expect(!isFinished)
         }
@@ -268,7 +276,7 @@ enum URLSessionClientTests {
                                 isFinished = true
                             case .failure(let error):
                                 switch error {
-                                case .urlSessionError(let error):
+                                case .unexpectedURLSessionError(let error):
                                     underlyingURLSessionError = error as NSError
                                 default:
                                     otherFailureError = error
@@ -292,7 +300,7 @@ enum URLSessionClientTests {
         mutating func urlSessionTaskCancelled() async throws {
             let client = URLSessionClient(urlSession: URLSession.shared)
             var successData: Data?
-            var urlSessionTaskCancelledError: NSError?
+            var urlSessionTaskCancelledError: URLError?
             var otherFailureError: RequestDataError?
             var isFinished = false
             
@@ -304,7 +312,7 @@ enum URLSessionClientTests {
                     case .failure(let error):
                         switch error {
                         case .urlSessionError(let error):
-                            urlSessionTaskCancelledError = error as NSError
+                            urlSessionTaskCancelledError = error
                         default:
                             otherFailureError = error
                         }
@@ -329,7 +337,7 @@ enum URLSessionClientTests {
             }
             
             #expect(successData == nil)
-            #expect(try #require(urlSessionTaskCancelledError).code == -999)
+            #expect(try #require(urlSessionTaskCancelledError).code == .cancelled)
             #expect(otherFailureError == nil)
             #expect(!isFinished)
         }
