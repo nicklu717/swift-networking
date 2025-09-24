@@ -22,11 +22,11 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
     }
     
     // MARK: - Async
-    open func requestObject<T>(for endpoint: Endpoint) async -> RequestObjectResult<T> where T: Decodable {
-        return await requestData(for: endpoint).flatMap { decode(data: $0) }
+    open func requestObject<T>(_ endpoint: Endpoint) async -> RequestObjectResult<T> where T: Decodable {
+        return await requestData(endpoint).flatMap { decode(data: $0) }
     }
     
-    open func requestData(for endpoint: Endpoint) async -> RequestObjectResult<Data> {
+    open func requestData(_ endpoint: Endpoint) async -> RequestObjectResult<Data> {
         return await makeRequest(for: endpoint)
             .asyncFlatMap {
                 await client.requestData(request: $0)
@@ -35,8 +35,8 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
     }
     
     // MARK: - Combine
-    open func requestObjectPublisher<T>(for endpoint: Endpoint) -> RequestObjectPublisher<T> where T: Decodable {
-        return requestDataPublisher(for: endpoint)
+    open func requestObjectPublisher<T>(_ endpoint: Endpoint) -> RequestObjectPublisher<T> where T: Decodable {
+        return requestDataPublisher(endpoint)
             .flatMap { [weak self] data -> RequestObjectPublisher<T> in
                 guard let self = self else {
                     return Fail(outputType: T.self, failure: .selfNotExist).eraseToAnyPublisher()
@@ -46,7 +46,7 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
             .eraseToAnyPublisher()
     }
     
-    open func requestDataPublisher(for endpoint: Endpoint) -> RequestObjectPublisher<Data> {
+    open func requestDataPublisher(_ endpoint: Endpoint) -> RequestObjectPublisher<Data> {
         return makeRequest(for: endpoint).publisher
             .flatMap { [weak self] request -> RequestObjectPublisher<Data> in
                 guard let self = self else {

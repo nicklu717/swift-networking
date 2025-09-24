@@ -29,7 +29,7 @@ struct HTTPProviderTests {
             var successObject: TestObject?
             var failureError: RequestObjectError?
             
-            let result: RequestTestObjectResult = await provider.requestObject(for: .plain())
+            let result: RequestTestObjectResult = await provider.requestObject(.plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -48,7 +48,7 @@ struct HTTPProviderTests {
             var urlSessionClientError: RequestObjectError?
             var otherFailureError: RequestObjectError?
             
-            let result: RequestTestObjectResult = await provider.requestObject(for: .plain())
+            let result: RequestTestObjectResult = await provider.requestObject(.plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -73,7 +73,7 @@ struct HTTPProviderTests {
             var makeRequestError: RequestObjectError?
             var otherFailureError: RequestObjectError?
             
-            let result: RequestTestObjectResult = await provider.requestObject(for: .invalidURL())
+            let result: RequestTestObjectResult = await provider.requestObject(.invalidURL())
             switch result {
             case .success(let object):
                 successObject = object
@@ -98,7 +98,7 @@ struct HTTPProviderTests {
             var jsonDecodingFailureError: RequestObjectError?
             var otherFailureError: RequestObjectError?
             
-            let result: RequestTestObjectResult = await provider.requestObject(for: .plain())
+            let result: RequestTestObjectResult = await provider.requestObject(.plain())
             switch result {
             case .success(let object):
                 successObject = object
@@ -134,7 +134,7 @@ struct HTTPProviderTests {
             var failureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
-                provider.requestObjectPublisher(for: .plain())
+                provider.requestObjectPublisher(.plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -166,7 +166,7 @@ struct HTTPProviderTests {
             var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
-                provider.requestObjectPublisher(for: .plain())
+                provider.requestObjectPublisher(.plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -204,7 +204,7 @@ struct HTTPProviderTests {
             var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
-                provider.requestObjectPublisher(for: .invalidURL())
+                provider.requestObjectPublisher(.invalidURL())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -242,7 +242,7 @@ struct HTTPProviderTests {
             var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
-                provider.requestObjectPublisher(for: .plain())
+                provider.requestObjectPublisher(.plain())
                     .sink(
                         receiveCompletion: {
                             switch $0 {
@@ -280,7 +280,7 @@ struct HTTPProviderTests {
             var otherFailureError: RequestObjectError?
             
             await withCheckedContinuation { continuation in
-                let publisher: TestAPIProvider.RequestObjectPublisher<TestObject> = provider!.requestObjectPublisher(for: .plain())
+                let publisher: TestAPIProvider.RequestObjectPublisher<TestObject> = provider!.requestObjectPublisher(.plain())
                 provider = nil
                 publisher
                     .sink(
