@@ -60,11 +60,11 @@ struct HTTPEndpointTests {
                         case .data(let data):
                             #expect(request.httpBody == data)
                         case .json(let encodable):
-                            let data = try #require(try JSONEncoder().encode(encodable))
+                            let data = try JSONEncoder().encode(encodable)
                             #expect(request.httpBody == data)
                         }
                     case .dictionary(let dictionary):
-                        let data = try #require(try JSONSerialization.data(withJSONObject: dictionary))
+                        let data = try JSONSerialization.data(withJSONObject: dictionary)
                         #expect(request.httpBody == data)
                     }
                 }
