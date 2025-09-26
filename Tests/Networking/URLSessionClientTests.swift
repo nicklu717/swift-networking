@@ -22,7 +22,7 @@ enum URLSessionClientTests {
         
         @Test
         func success() async {
-            let client = TestURLSessionClient(testCase: .success)
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .success))
             var successData: Data?
             var failureError: RequestDataError?
             
@@ -39,7 +39,7 @@ enum URLSessionClientTests {
         
         @Test
         func notHTTPResponse() async {
-            let client = TestURLSessionClient(testCase: .notHTTPResponse)
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .notHTTPResponse))
             var successData: Data?
             var notHTTPResponseError: RequestDataError?
             var otherFailureError: RequestDataError?
@@ -62,14 +62,14 @@ enum URLSessionClientTests {
         }
         
         @Test(arguments: [
-            (400, TestURLSessionClient.HTTPResponseStatus.Kind.clientError),
-            (500, TestURLSessionClient.HTTPResponseStatus.Kind.serverError),
-            (900, TestURLSessionClient.HTTPResponseStatus.Kind.invalid)
+            (400, URLSessionClient.HTTPResponseStatus.Kind.clientError),
+            (500, URLSessionClient.HTTPResponseStatus.Kind.serverError),
+            (900, URLSessionClient.HTTPResponseStatus.Kind.invalid)
         ])
-        func requestFailure(statusCode: Int, expectedStatusKind: TestURLSessionClient.HTTPResponseStatus.Kind) async throws {
-            let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
+        func requestFailure(statusCode: Int, expectedStatusKind: URLSessionClient.HTTPResponseStatus.Kind) async throws {
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .requestFailure(statusCode)))
             var successData: Data?
-            var requestFailureStatus: TestURLSessionClient.HTTPResponseStatus?
+            var requestFailureStatus: URLSessionClient.HTTPResponseStatus?
             var otherFailureError: RequestDataError?
             
             switch await client.requestData(url: mockURL) {
@@ -93,7 +93,7 @@ enum URLSessionClientTests {
         func urlSessionError() async throws {
             let mockError = NSError(domain: "mockErrorDomain", code: 999)
             
-            let client = TestURLSessionClient(testCase: .urlSessionError(mockError))
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .urlSessionError(mockError)))
             var successData: Data?
             var underlyingURLSessionError: NSError?
             var otherFailureError: RequestDataError?
@@ -145,13 +145,13 @@ enum URLSessionClientTests {
     }
     
     @Suite
-    struct RequestDataPublisherTests {
+    struct RequestPublisherTests {
         
         private var cancellable: AnyCancellable?
         
         @Test
         mutating func success() async {
-            let client = TestURLSessionClient(testCase: .success)
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .success))
             var successData: Data?
             var failureError: RequestDataError?
             var isFinished = false
@@ -181,7 +181,7 @@ enum URLSessionClientTests {
         
         @Test
         mutating func notHTTPResponse() async {
-            let client = TestURLSessionClient(testCase: .notHTTPResponse)
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .notHTTPResponse))
             var successData: Data?
             var notHTTPResponseError: RequestDataError?
             var otherFailureError: RequestDataError?
@@ -217,14 +217,14 @@ enum URLSessionClientTests {
         }
         
         @Test(arguments: [
-            (400, TestURLSessionClient.HTTPResponseStatus.Kind.clientError),
-            (500, TestURLSessionClient.HTTPResponseStatus.Kind.serverError),
-            (900, TestURLSessionClient.HTTPResponseStatus.Kind.invalid)
+            (400, URLSessionClient.HTTPResponseStatus.Kind.clientError),
+            (500, URLSessionClient.HTTPResponseStatus.Kind.serverError),
+            (900, URLSessionClient.HTTPResponseStatus.Kind.invalid)
         ])
-        mutating func requestFailure(statusCode: Int, expectedStatusKind: TestURLSessionClient.HTTPResponseStatus.Kind) async throws {
-            let client = TestURLSessionClient(testCase: .requestFailure(statusCode))
+        mutating func requestFailure(statusCode: Int, expectedStatusKind: URLSessionClient.HTTPResponseStatus.Kind) async throws {
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .requestFailure(statusCode)))
             var successData: Data?
-            var requestFailureStatus: TestURLSessionClient.HTTPResponseStatus?
+            var requestFailureStatus: URLSessionClient.HTTPResponseStatus?
             var otherFailureError: RequestDataError?
             var isFinished = false
             
@@ -261,7 +261,7 @@ enum URLSessionClientTests {
         mutating func urlSessionError() async throws {
             let mockError = NSError(domain: "mockErrorDomain", code: 999)
             
-            let client = TestURLSessionClient(testCase: .urlSessionError(mockError))
+            let client = URLSessionClient(urlSession: MockURLSession(testCase: .urlSessionError(mockError)))
             var successData: Data?
             var underlyingURLSessionError: NSError?
             var otherFailureError: RequestDataError?
@@ -344,7 +344,7 @@ enum URLSessionClientTests {
         
         @Test
         mutating func selfNotExist() async {
-            var client: URLSessionClient? = TestURLSessionClient(testCase: .selfNotExist)
+            var client: URLSessionClient? = URLSessionClient(urlSession: MockURLSession(testCase: .selfNotExist))
             var successData: Data?
             var selfBeingReleasedError: RequestDataError?
             var otherFailureError: RequestDataError?
@@ -385,42 +385,35 @@ enum URLSessionClientTests {
 
 extension URLSessionClientTests {
     
-    class TestURLSessionClient: URLSessionClient {
+    class MockURLSession: URLSessionProtocol {
+        enum TestCase {
+            case success
+            case notHTTPResponse
+            case requestFailure(Int)
+            case urlSessionError(Error)
+            case selfNotExist
+        }
+        private let testCase: TestCase
         
-        init(testCase: MockURLSession.TestCase) {
-            super.init(urlSession: MockURLSession(testCase: testCase))
+        init(testCase: TestCase) {
+            self.testCase = testCase
         }
         
-        class MockURLSession: URLSessionProtocol {
-            enum TestCase {
-                case success
-                case notHTTPResponse
-                case requestFailure(Int)
-                case urlSessionError(Error)
-                case selfNotExist
+        func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+            switch testCase {
+            case .success, .selfNotExist:
+                return (Data(), makeHTTPURLResponse(request: request, statusCode: 200))
+            case .notHTTPResponse:
+                return (Data(), URLResponse())
+            case .requestFailure(let statusCode):
+                return (Data(), makeHTTPURLResponse(request: request, statusCode: statusCode))
+            case .urlSessionError(let error):
+                throw error
             }
-            private let testCase: TestCase
-            
-            init(testCase: TestCase) {
-                self.testCase = testCase
-            }
-            
-            func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-                switch testCase {
-                case .success, .selfNotExist:
-                    return (Data(), makeHTTPURLResponse(request: request, statusCode: 200))
-                case .notHTTPResponse:
-                    return (Data(), URLResponse())
-                case .requestFailure(let statusCode):
-                    return (Data(), makeHTTPURLResponse(request: request, statusCode: statusCode))
-                case .urlSessionError(let error):
-                    throw error
-                }
-            }
-            
-            private func makeHTTPURLResponse(request: URLRequest, statusCode: Int) -> HTTPURLResponse {
-                return HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!
-            }
+        }
+        
+        private func makeHTTPURLResponse(request: URLRequest, statusCode: Int) -> HTTPURLResponse {
+            return HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!
         }
     }
 }

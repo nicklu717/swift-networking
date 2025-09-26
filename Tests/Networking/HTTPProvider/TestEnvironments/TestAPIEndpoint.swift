@@ -6,27 +6,7 @@
 //
 
 import Foundation
-import Utilities
-
-@testable import Networking
-
-class TestAppSettings {
-    static let shared = TestAppSettings()
-    
-    enum TestAPIEnvironment: CaseIterable {
-        case staging, production
-    }
-    let currentTestAPIEnvironment: TestAPIEnvironment = .staging
-    
-    var testAPIDomain: String {
-        switch currentTestAPIEnvironment {
-        case .staging:
-            return "https://staging.example.com"
-        case .production:
-            return "https://api.example.com"
-        }
-    }
-}
+import Networking
 
 class TestAPIEndpoint: HTTPEndpoint {
     

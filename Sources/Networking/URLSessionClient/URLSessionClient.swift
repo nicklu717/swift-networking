@@ -9,8 +9,8 @@ import Foundation
 import Combine
 
 open class URLSessionClient {
-    public typealias RequestDataResult = Result<Data, RequestDataError>
-    public typealias RequestDataPublisher = AnyPublisher<Data, RequestDataError>
+    public typealias RequestResult = Result<Data, RequestDataError>
+    public typealias RequestPublisher = AnyPublisher<Data, RequestDataError>
     
     private let urlSession: URLSessionProtocol
     
@@ -18,7 +18,7 @@ open class URLSessionClient {
         self.urlSession = urlSession
     }
     
-    open func requestData(request: URLRequest) async -> RequestDataResult {
+    open func requestData(request: URLRequest) async -> RequestResult {
         do {
             let (data, response) = try await urlSession.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -41,13 +41,13 @@ open class URLSessionClient {
     
     open func requestDataPublisher(
         request: URLRequest,
-        resultAfterCancelledHandler: ((RequestDataResult) -> Void)? = nil
-    ) -> RequestDataPublisher {
+        resultAfterCancelledHandler: ((RequestResult) -> Void)? = nil
+    ) -> RequestPublisher {
         var underlyingTask: Task<Void, Never>?
         return Deferred { [weak self] in
             Future { promise in
                 underlyingTask = Task {
-                    let result: RequestDataResult = await {
+                    let result: RequestResult = await {
                         guard let self = self else { return .failure(.selfNotExist) }
                         return await self.requestData(request: request)
                     }()
@@ -67,14 +67,14 @@ open class URLSessionClient {
         .eraseToAnyPublisher()
     }
     
-    public func requestData(url: URL) async -> RequestDataResult {
+    public func requestData(url: URL) async -> RequestResult {
         return await requestData(request: URLRequest(url: url))
     }
     
     public func requestDataPublisher(
         url: URL,
-        resultAfterCancelledHandler: ((RequestDataResult) -> Void)?
-    ) -> RequestDataPublisher {
+        resultAfterCancelledHandler: ((RequestResult) -> Void)?
+    ) -> RequestPublisher {
         return requestDataPublisher(request: URLRequest(url: url), resultAfterCancelledHandler: resultAfterCancelledHandler)
     }
 }

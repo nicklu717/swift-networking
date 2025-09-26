@@ -7,7 +7,6 @@
 
 import Foundation
 import HTTPTypes
-import Utilities
 
 extension HTTPEndpoint {
     
