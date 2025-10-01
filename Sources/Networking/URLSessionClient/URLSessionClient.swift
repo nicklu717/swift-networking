@@ -9,8 +9,8 @@ import Foundation
 import Combine
 
 open class URLSessionClient {
-    public typealias RequestResult = Result<Data, RequestDataError>
-    public typealias RequestPublisher = AnyPublisher<Data, RequestDataError>
+    public typealias RequestResult = Result<Data, RequestError>
+    public typealias RequestPublisher = AnyPublisher<Data, RequestError>
     
     private let urlSession: URLSessionProtocol
     
@@ -81,7 +81,7 @@ open class URLSessionClient {
 
 // MARK: - Request Error
 extension URLSessionClient {
-    public enum RequestDataError: Error {
+    public enum RequestError: Error {
         case notHTTPResponse(URLResponse)
         case requestFailure(HTTPResponseStatus, Data)
         case urlSessionError(URLError)

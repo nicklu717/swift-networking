@@ -75,7 +75,7 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
 // MARK: - Request Error
 extension HTTPProvider {
     public enum RequestError: Error {
-        case urlSessionClientError(URLSessionClient.RequestDataError)
+        case urlSessionClientError(URLSessionClient.RequestError)
         case makeRequestError(HTTPEndpoint.MakeRequestError)
         case jsonDecodingFailure(Error)
         case selfNotExist
