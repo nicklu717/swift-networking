@@ -30,7 +30,7 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
             }
     }
     
-    public func requestObject<T>(_ endpoint: Endpoint) async -> RequestResult<T> where T: Decodable {
+    open func requestObject<T>(_ endpoint: Endpoint) async -> RequestResult<T> where T: Decodable {
         return await requestData(endpoint).flatMap { decode(data: $0) }
     }
     
@@ -48,7 +48,7 @@ open class HTTPProvider<Endpoint> where Endpoint: HTTPEndpoint {
             .eraseToAnyPublisher()
     }
     
-    public func requestObjectPublisher<T>(_ endpoint: Endpoint) -> RequestPublisher<T> where T: Decodable {
+    open func requestObjectPublisher<T>(_ endpoint: Endpoint) -> RequestPublisher<T> where T: Decodable {
         return requestDataPublisher(endpoint)
             .flatMap { [weak self] data -> RequestPublisher<T> in
                 guard let self = self else {
