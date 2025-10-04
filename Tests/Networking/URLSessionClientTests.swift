@@ -95,7 +95,7 @@ enum URLSessionClientTests {
             
             let client = URLSessionClient(urlSession: MockURLSession(testCase: .urlSessionError(mockError)))
             var successData: Data?
-            var underlyingURLSessionError: NSError?
+            var unknownURLError: URLError?
             var otherFailureError: RequestError?
             
             switch await client.requestData(url: mockURL) {
@@ -103,15 +103,15 @@ enum URLSessionClientTests {
                 successData = data
             case .failure(let error):
                 switch error {
-                case .unexpectedURLSessionError(let error):
-                    underlyingURLSessionError = error as NSError
+                case .urlSessionError(let error):
+                    unknownURLError = error
                 default:
                     otherFailureError = error
                 }
             }
             
             #expect(successData == nil)
-            #expect(try #require(underlyingURLSessionError) == mockError)
+            #expect(try #require(unknownURLError).code == .unknown)
             #expect(otherFailureError == nil)
         }
         
@@ -263,7 +263,7 @@ enum URLSessionClientTests {
             
             let client = URLSessionClient(urlSession: MockURLSession(testCase: .urlSessionError(mockError)))
             var successData: Data?
-            var underlyingURLSessionError: NSError?
+            var unknownURLError: URLError?
             var otherFailureError: RequestError?
             var isFinished = false
             
@@ -276,8 +276,8 @@ enum URLSessionClientTests {
                                 isFinished = true
                             case .failure(let error):
                                 switch error {
-                                case .unexpectedURLSessionError(let error):
-                                    underlyingURLSessionError = error as NSError
+                                case .urlSessionError(let error):
+                                    unknownURLError = error
                                 default:
                                     otherFailureError = error
                                 }
@@ -291,7 +291,7 @@ enum URLSessionClientTests {
             }
             
             #expect(successData == nil)
-            #expect(try #require(underlyingURLSessionError) == mockError)
+            #expect(try #require(unknownURLError).code == .unknown)
             #expect(otherFailureError == nil)
             #expect(!isFinished)
         }

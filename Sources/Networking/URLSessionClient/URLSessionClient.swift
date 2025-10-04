@@ -38,11 +38,7 @@ open class URLSessionClient {
                 return .failure(.requestFailure(status, data))
             }
         } catch {
-            if let urlError = error as? URLError {
-                return .failure(.urlSessionError(urlError))
-            } else {
-                return .failure(.unexpectedURLSessionError(error))
-            }
+            return .failure(.urlSessionError((error as? URLError) ?? URLError(.unknown)))
         }
     }
     
@@ -92,8 +88,7 @@ extension URLSessionClient {
         case notHTTPResponse(URLResponse)
         case requestFailure(HTTPResponseStatus, Data)
         case urlSessionError(URLError)
-        case unexpectedURLSessionError(Error)
         case selfNotExist
-        case custom(String, Error?)
+        case custom(String)
     }
 }
