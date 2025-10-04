@@ -13,14 +13,21 @@ open class URLSessionClient {
     public typealias RequestPublisher = AnyPublisher<Data, RequestError>
     
     private let urlSession: URLSessionProtocol
+    private let plugins: [Plugin]
     
-    public init(urlSession: URLSessionProtocol) {
+    public init(urlSession: URLSessionProtocol, plugins: [Plugin] = []) {
         self.urlSession = urlSession
+        self.plugins = plugins
     }
     
     open func requestData(request: URLRequest) async -> RequestResult {
         do {
+            let request = plugins.reduce(request) { $1.modify(request: $0) }
+            plugins.forEach { $0.willSend(request: request) }
+            
             let (data, response) = try await urlSession.data(for: request)
+            plugins.forEach { $0.didReceive(data: data, response: response, request: request) }
+            
             guard let httpResponse = response as? HTTPURLResponse else {
                 return .failure(.notHTTPResponse(response))
             }
