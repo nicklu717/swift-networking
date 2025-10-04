@@ -14,5 +14,6 @@ extension URLSessionClient {
         open func modify(request: URLRequest) -> URLRequest { return request }
         open func willSend(request: URLRequest) {}
         open func didReceive(data: Data, response: URLResponse, request: URLRequest) {}
+        open func didReceive(error: URLError, request: URLRequest) {}
     }
 }

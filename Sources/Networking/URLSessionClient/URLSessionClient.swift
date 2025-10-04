@@ -38,7 +38,9 @@ open class URLSessionClient {
                 return .failure(.requestFailure(status, data))
             }
         } catch {
-            return .failure(.urlSessionError((error as? URLError) ?? URLError(.unknown)))
+            let urlError = (error as? URLError) ?? URLError(.unknown)
+            plugins.forEach { $0.didReceive(error: urlError, request: request) }
+            return .failure(.urlSessionError(urlError))
         }
     }
     
